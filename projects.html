@@ -1,0 +1,21 @@
+---
+layout: base
+title: Projects
+---
+<h2>My opensource projects</h2>
+<ul id="projects"></ul>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript">
+    //cf. http://develop.github.com/
+    $.getJSON("http://github.com/api/v2/json/repos/show/lfborjas?callback=?", {}, 
+        function(data){
+            $.each(data.repositories, function(i,repo){
+                var is_repo = repo.fork ? "(fork)" : "";
+                $("#projects").append("<li><a href='"+repo.url+"'>"+repo.name+
+                is_repo
+                +"</a> <small>"+
+                repo.description+"</small></li>");
+            });
+        }
+    );
+</script>

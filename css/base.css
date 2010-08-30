@@ -1,0 +1,167 @@
+body{
+	font: normal normal normal 16px/normal Arial, Helvetica, sans-serif;
+	background: #fff;
+	color: #7E7E7E;
+	font-size: 1.1em;
+}
+
+a{
+	/*font-weight: bold;*/
+	color: #4EC714;	
+}
+
+h2{
+	color: #333333;
+	font-size: 1.5333em;
+}
+.date{
+	color: #525252;
+	font-size: 1.4em;
+	text-indent: -100px;
+}
+
+p{
+	/*font-size: 1.3em;*/
+	text-align: justify !important;
+}
+
+.title-link{
+	color: #333333;
+	text-decoration: none;
+}
+
+.title-link:hover{
+	color: #3EC313;
+}
+
+#content{
+	min-height: 500px;
+	margin: 0 auto;
+	width: 600px;
+	padding-top: 100px;
+}
+
+#footer{
+	color: #999999;
+	font-size: 0.7em;
+	margin: 0 auto;
+	text-align: center;
+	width: 600px;
+}
+
+/*color theme: http://colorschemedesigner.com/#2G11TsOsOK-K-*/
+#header{
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	right: 0;	
+	background: #000000;
+	border:1px solid #111111;
+	width: 100%;
+	/*height: auto;*/
+	/*padding: 30px 30px 30px 130px;*/
+	filter: alpha(opacity=80);
+	opacity: .80;
+	height: 50px;
+	
+}
+
+#header #branding{
+	float: left;
+	color: #3EC313;
+	font-family: 'Lucida Console', Monaco, Courier New, monospace;
+	font-size: 1.7em;
+	padding-left: 5px;
+}
+
+#branding a{
+	text-decoration: none;
+	color: #3EC313;
+}
+
+#header #menu{
+	float: right;	
+	font-size: 1.7em;
+	padding-right: 5px;
+}
+
+#header #menu a{
+	color: #fff;
+	text-decoration: none;	
+}
+
+#header #menu a:hover{
+	color: #3EC313;		
+}
+
+.edit{
+	background: white url(http://assets.tumblr.com/images/input_bg.gif) repeat-x 50% 0%;
+	border: 1px solid #BBB;
+	color: #222;
+	font: normal normal normal 13px/normal 'Lucida Grande', Helvetica, Arial, sans-serif;
+	margin: 0px;
+	outline: ;
+	padding: 7px;
+}
+
+.body-edit{
+	width: 600px;
+	height: 120px;
+	border: 3px solid #cccccc;
+	padding: 5px;		
+}
+
+.submit-post{
+	background-color: whiteSmoke;
+	border: 1px solid #DDD;
+	border-bottom-left-radius: 5px 5px;
+	border-bottom-left-radius: 5px 5px;
+	border-bottom-right-radius: 5px 5px;
+	border-bottom-right-radius: 5px 5px;
+	border-left: 1px solid #DDD;
+	border-top: 1px solid #DDD;
+	border-top-left-radius: 5px 5px;
+	border-top-left-radius: 5px 5px;
+	border-top-right-radius: 5px 5px;
+	border-top-right-radius: 5px 5px;
+	color: #529214;
+	cursor: pointer;
+	font: normal normal normal 15px/normal Helvetica, Arial, sans-serif;
+	height: 36px;
+	line-height: 36px;
+	margin: 0px;
+	overflow: visible;
+	padding: 0px 14px 0px 12px;
+	width: auto;
+	-webkit-box-align: center;
+	-webkit-box-sizing: border-box;
+	text-align: center;
+}
+
+.submit-post img{
+	border-width: 0px;
+	height: 16px;
+	margin-right: 2px;
+	vertical-align: -3px;
+	width: 16px;
+}
+
+#license, #powered{
+	display: inline;
+	padding-left: 10px; 
+}
+
+#id_title, #id_slug{
+	width: 90%;
+}
+
+.pagination{
+	font-size: 1.2em;
+	display: block;
+	text-align: center;
+}
+
+.pagination:hover{
+	text-decoration: none;
+	color: #333333; 
+}
