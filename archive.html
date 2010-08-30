@@ -10,7 +10,7 @@ To date, I've written {{site.posts|size}} posts.
         <li>
             <strong>{{entry.date|date:"%b %d, %Y"}}</strong>
             <a href={{entry.url}} target="_blank">{{entry.title}}</a>
-            <em class="tags">(tagged {{entry.tags|array_to_sentence_string}})</em>
+            <span class="tags">about <em>{{entry.tags|array_to_sentence_string}}</em></span>
         </li>
     {%endfor%}
 </ul>

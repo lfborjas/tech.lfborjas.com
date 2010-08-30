@@ -94,58 +94,6 @@ p{
 	color: #3EC313;		
 }
 
-.edit{
-	background: white url(http://assets.tumblr.com/images/input_bg.gif) repeat-x 50% 0%;
-	border: 1px solid #BBB;
-	color: #222;
-	font: normal normal normal 13px/normal 'Lucida Grande', Helvetica, Arial, sans-serif;
-	margin: 0px;
-	outline: ;
-	padding: 7px;
-}
-
-.body-edit{
-	width: 600px;
-	height: 120px;
-	border: 3px solid #cccccc;
-	padding: 5px;		
-}
-
-.submit-post{
-	background-color: whiteSmoke;
-	border: 1px solid #DDD;
-	border-bottom-left-radius: 5px 5px;
-	border-bottom-left-radius: 5px 5px;
-	border-bottom-right-radius: 5px 5px;
-	border-bottom-right-radius: 5px 5px;
-	border-left: 1px solid #DDD;
-	border-top: 1px solid #DDD;
-	border-top-left-radius: 5px 5px;
-	border-top-left-radius: 5px 5px;
-	border-top-right-radius: 5px 5px;
-	border-top-right-radius: 5px 5px;
-	color: #529214;
-	cursor: pointer;
-	font: normal normal normal 15px/normal Helvetica, Arial, sans-serif;
-	height: 36px;
-	line-height: 36px;
-	margin: 0px;
-	overflow: visible;
-	padding: 0px 14px 0px 12px;
-	width: auto;
-	-webkit-box-align: center;
-	-webkit-box-sizing: border-box;
-	text-align: center;
-}
-
-.submit-post img{
-	border-width: 0px;
-	height: 16px;
-	margin-right: 2px;
-	vertical-align: -3px;
-	width: 16px;
-}
-
 #license, #powered{
 	display: inline;
 	padding-left: 10px; 
@@ -164,4 +112,13 @@ p{
 .pagination:hover{
 	text-decoration: none;
 	color: #333333; 
+}
+
+.tags{
+    background-color: #444;
+    color: #fafafa;
+	font-family: 'Lucida Console', Monaco, Courier New, monospace;
+    font-size: 0.8em;
+    display:block;
+    text-align: right;
 }
