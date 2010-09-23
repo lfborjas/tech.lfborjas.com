@@ -8,26 +8,36 @@
         <title>{{page.title}}</title>
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="stylesheet" type="text/css" href="/css/base.css" media="screen" /> 
+        <!--Using typekit-->
+        <script type="text/javascript" src="http://use.typekit.com/ayk2pbm.js"></script>
+        <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
 </head>
 <body>
 	<div id="main-container">
-		<div id="header">
-			<div id="branding">
-				<a href="/"><span id="brand">lfborjas</span></a>				
-			</div>
-			<div id="menu">
-				<a href="/archive.html">Archive</a> | <a href="/contact.html">Contact</a> | <a href="/projects.html">Projects</a>		
-			</div>
-		</div>
 		<div id="content">			
 		    {{content}}
         </div>
-		<div id="footer">
+        <div id="sidebar">
+            <h1><a href="/">Lfborjas writes a nerdlog</a></h1>
+            <ul id="nav-menu">
+                <li id="archive"><a href="/archive.html">All Posts</a></li>
+                <li id="contact"><a href="/contact.html">Find me elsewhere</a></li>
+                <li id="projects"><a href="/projects.html">I opensource</a></li>
+                <li></li>
+            </ul>
 			<div id="license">
 			<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
 			<img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>
 			</div>			
-		</div>
+        </div>
 	</div>
+<script type="text/javascript">
+var disqus_shortname = 'lfborjas';
+(function () {
+  var s = document.createElement('script'); s.async = true;
+  s.src = 'http://disqus.com/forums/lfborjas/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
 </body>
 </html>

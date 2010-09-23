@@ -1,0 +1,89 @@
+/*Color scheme: http://colorschemedesigner.com/#0041T008yw0w0*/
+$primary: #333;
+$secondary: #444;
+$tertiary: #A2A2A2;
+$emphasis: #0D1B1B;
+$background: #fefefe; 
+$decayFactor: 0.65;
+@mixin decay($index){
+    color: lighten($primary, $decayFactor*$index);
+}
+
+body{
+    font-family:"colaborate-1", "colaborate-2", Verdana, Helvetica, sans-serif; 
+    font-size: 17px;
+    background: $background url(/images/fine_grain.png) repeat 50% 50%;
+    color: $primary;
+    text-rendering: optimizeLegibility;
+}
+
+p{
+    text-shadow: $background 1px 1px 0px;
+}
+
+h1, h2, h3{
+    font-family: "anonymous-pro-1", "anonymous-pro-2", Georgia, serif;    
+    font-weight: bold;
+}
+
+h1{
+    color: $emphasis;
+    a{
+        text-decoration: none !important;
+    }
+}
+
+h2{
+    color: $secondary;
+}
+
+h3{
+    color: $tertiary;
+}
+
+#content{
+    width: 80%;
+    min-height: 450px;
+    float: left;
+    background: transparentize($background, 0.45);
+    text-align: left;
+}
+
+
+#sidebar{
+    width: 15%;
+    min-height: 450px;
+    float:right;
+    font-size: 18px;
+    text-align: right;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    ul{
+        list-style-type: none;
+        li{ padding-bottom: 10px;}
+    }
+    
+}
+
+
+a {
+    color: $emphasis;
+    &:hover {
+        background-color: transparentize($secondary, 0.3);
+    }
+}
+
+#posts{
+    font-size: 16px;
+    li{
+        padding-bottom: 5px;
+    }
+
+    .tags{
+        background: $primary;
+        color: $background;
+    }
+}
+

@@ -5,6 +5,7 @@ title: lfborjas on the internerd
 
 {%for page in paginator.posts%}
     {%include post.html%}
+    <a href="{{page.url}}#disqus_thread"></a>
 {%endfor%}
 
 {%if paginator.next_page%}
