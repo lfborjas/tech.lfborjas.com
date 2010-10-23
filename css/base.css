@@ -1,1 +1,45 @@
-body{font-family:"colaborate-1", "colaborate-2", Verdana, Helvetica, sans-serif;font-size:17px;background:#fefefe url(/images/fine_grain.png) repeat 50% 50%;color:#333333;text-rendering:optimizeLegibility}p{text-shadow:#fefefe 1px 1px 0px}h1,h2,h3{font-family:"anonymous-pro-1", "anonymous-pro-2", Georgia, serif;font-weight:bold}h1{color:#0d1b1b}h1 a{text-decoration:none !important}h2{color:#444444}h3{color:#a2a2a2}#content{width:80%;min-height:450px;float:left;background:rgba(254, 254, 254, 0.55);text-align:left}#sidebar{width:15%;min-height:450px;float:right;font-size:18px;text-align:right;position:fixed;top:0;right:0;bottom:0}#sidebar ul{list-style-type:none}#sidebar ul li{padding-bottom:10px}a{color:#0d1b1b}a:hover{background-color:rgba(68, 68, 68, 0.7)}#posts{font-size:16px}#posts li{padding-bottom:5px}#posts .tags{background:#333333;color:#fefefe}
+body {
+    font-family: "colaborate-1", "colaborate-2", Verdana, Helvetica, sans-serif;
+    font-size: 17px;
+    background: #fefefe url(/images/fine_grain.png) repeat 50% 50%;
+    color: #333333;
+    text-rendering: optimizeLegibility;
+}
+p { text-shadow: #fefefe 1px 1px 0px }
+h1, h2, h3 {
+    font-family: "anonymous-pro-1", "anonymous-pro-2", Georgia, serif;
+    font-weight: bold;
+}
+h1 { color: #0d1b1b }
+h1 a { text-decoration: none !important }
+h2 { color: #444444 }
+h3 { color: #a2a2a2 }
+#content {
+    width: 80%;
+    min-height: 450px;
+    float: left;
+    background: rgba(254, 254, 254, 0.55);
+    text-align: left;
+	margin-left:20px;
+}
+#sidebar {
+    width: 15%;
+    min-height: 450px;
+    float: right;
+    font-size: 18px;
+    text-align: right;
+    position: fixed;
+    top: 0;
+    right: 10px;
+    bottom: 0;
+}
+#sidebar ul { list-style-type: none }
+#sidebar ul li { padding-bottom: 10px }
+a { color: #0d1b1b }
+a:hover { background-color: rgba(68, 68, 68, 0.7) }
+#posts { font-size: 16px }
+#posts li { padding-bottom: 5px }
+#posts .tags {
+    background: #333333;
+    color: #fefefe;
+}
