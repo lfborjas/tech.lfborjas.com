@@ -1,45 +1,54 @@
 body {
-    font-family: "colaborate-1", "colaborate-2", Verdana, Helvetica, sans-serif;
+    font-family: Helvetica, sans-serif; 
     font-size: 17px;
-    background: #fefefe url(/images/fine_grain.png) repeat 50% 50%;
+    background: #FAFAFA; 
     color: #333333;
     text-rendering: optimizeLegibility;
 }
+
+article{
+    width: 600px;
+    margin: 0 auto;
+}
+
+time{
+    color: #666;
+    font-family: "Lucida Console", Courier, monospace;
+}
+
 p { text-shadow: #fefefe 1px 1px 0px }
-h1, h2, h3 {
-    font-family: "anonymous-pro-1", "anonymous-pro-2", Georgia, serif;
-    font-weight: bold;
+
+h1, h2, header, nav{
+    background-color: rgba(0, 0, 0, 0.691406);
+    -webkit-background-clip: text;
+    -moz-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: rgba(255,255,255,0.5) 0 5px 6px;
+    font-family: "Lucida Console", Courier, monospace;
 }
-h1 { color: #0d1b1b }
-h1 a { text-decoration: none !important }
-h2 { color: #444444 }
-h3 { color: #a2a2a2 }
-#content {
-    width: 80%;
-    min-height: 450px;
-    float: left;
-    background: rgba(254, 254, 254, 0.55);
-    text-align: left;
-	margin-left:20px;
+
+h2{
+    font-size: 1.5em;
 }
-#sidebar {
-    width: 15%;
-    min-height: 450px;
-    float: right;
-    font-size: 18px;
-    text-align: right;
-    position: fixed;
-    top: 0;
-    right: 10px;
-    bottom: 0;
-}
-#sidebar ul { list-style-type: none }
-#sidebar ul li { padding-bottom: 10px }
+
 a { color: #0d1b1b }
 a:hover { background-color: rgba(68, 68, 68, 0.7) }
-#posts { font-size: 16px }
-#posts li { padding-bottom: 5px }
-#posts .tags {
-    background: #333333;
-    color: #fefefe;
+
+h2 > a, h2 > span, header  a, h1 > a{
+    color: inherit;
+    text-decoration: none;
+}
+
+#posts li{
+    margin-bottom: 10px;
+}
+
+nav{
+    float: right;
+    padding-top: 0.5em;
+}
+
+h1{
+    display: inline;
 }
