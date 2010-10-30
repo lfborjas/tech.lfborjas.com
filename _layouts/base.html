@@ -1,36 +1,25 @@
 <!DOCTYPE HTML> 
 <html>
 <head>
-        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
-        <meta http-equiv="Content-Style-Type" content="text/css" />
-		<meta name="description" content="lfborjas on the internerd: web development and life" />
-		<meta property="fb:admins" content="1375997733" />
+        <meta charset="utf-8" />
+        <meta name="description" content="lfborjas on the internerd: web development and life" />
         <title>{{page.title}}</title>
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="stylesheet" type="text/css" href="/css/base.css" media="screen" /> 
-        <!--Using typekit-->
-        <script type="text/javascript" src="http://use.typekit.com/ayk2pbm.js"></script>
-        <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
 </head>
 <body>
-	<div id="main-container">
-		<div id="content">			
-		    {{content}}
-        </div>
-        <div id="sidebar">
-            <h1><a href="/">Lfborjas writes a nerdlog</a></h1>
-            <ul id="nav-menu">
-                <li id="archive"><a href="/archive.html">All Posts</a></li>
-                <li id="contact"><a href="/contact.html">Find me elsewhere</a></li>
-                <li id="projects"><a href="/projects.html">I opensource</a></li>
-                <li></li>
-            </ul>
-			<div id="license">
-			<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
-			<img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>
-			</div>			
-        </div>
-	</div>
+    <header>
+        Lfborjas' Nerdlog
+        <nav>
+            <a href="/">cd ~</a>
+            <a href="/contact.html">whois</a>
+            <a href="/projects.html">git show</a>
+        </nav>
+        </header>
+    <section>
+        {{content}}    
+    </section>
+
 <script type="text/javascript">
 var disqus_shortname = 'lfborjas';
 (function () {

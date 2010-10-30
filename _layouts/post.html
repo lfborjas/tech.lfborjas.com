@@ -1,18 +1,26 @@
 ---
 layout: base
 ---
-{%include post.html%}
 
-<div id="share">
+<h2><a href="{{page.url}}" class="title-link"><span class="rss-title">{{page.title}}</span></a></h2>		
+<time>{{page.date|date:"%a, %b %d %Y"}}<time>		
+<article>
+    <span class="rss-content">
+    {%if content%}
+        {{content}}
+    {%else%}
+        {{page.content}}
+    {%endif%}
+    </span>
+</article>		
+<!-- <span class="rss-id">http://www.lfborjas.com{{post.id}}</span> -->
+<!-- <span class="rss-link">http://www.lfborjas.com{{page.url}}</span> -->	
+<aside id="share">
     <!-- Share on twitter -->
     <div id="twitter-share">
     <a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" data-via="lfborjas">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
     </div>						
-    <!-- Share on facebook -->
-    <div id="facebook-share">
-        <fb:like layout="button_count" action="recommend" font="arial"></fb:like>
-    </div>					
-</div>
+</aside>
 <div id="disqus_thread"></div>
 <script type="text/javascript">  			
 (function() {
