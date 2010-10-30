@@ -7,7 +7,7 @@ title: lfborjas on the internerd
     {%for entry in site.posts%}
         <li>
             <strong>{{entry.date|date:"%b %d, %Y"}}</strong>
-            <a href="{{entry.url}}" target="_blank">{{entry.title}}</a>
+            <a href="{{entry.url}}">{{entry.title}}</a>
             <a href="{{entry.url}}#disqus_thread">Comments</a>
         </li>
     {%endfor%}

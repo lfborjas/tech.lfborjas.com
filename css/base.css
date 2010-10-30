@@ -19,17 +19,20 @@ time{
 p { text-shadow: #fefefe 1px 1px 0px }
 
 h1, h2, header, nav{
-    background-color: rgba(0, 0, 0, 0.691406);
-    -webkit-background-clip: text;
-    -moz-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: rgba(255,255,255,0.5) 0 5px 6px;
+    /*background-color: rgba(0, 0, 0, 0.691406);*/
+    /*-webkit-background-clip: text;*/
+    /*-moz-background-clip: text;*/
+    /*background-clip: text;*/
+    /*color: transparent;*/
+    /*text-shadow: rgba(255,255,255,0.5) 0 5px 6px;*/
     font-family: "Lucida Console", Courier, monospace;
 }
-
+h1, header{
+    color: #444;
+}
 h2{
     font-size: 1.5em;
+    color: #444;
 }
 
 a { color: #0d1b1b }
