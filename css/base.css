@@ -14,6 +14,8 @@ article{
 time{
     color: #666;
     font-family: "Lucida Console", Courier, monospace;
+    display: block;
+    text-align: center;
 }
 
 p { text-shadow: #fefefe 1px 1px 0px }
@@ -33,6 +35,7 @@ h1, header{
 h2{
     font-size: 1.5em;
     color: #444;
+    text-align: center;
 }
 
 a { color: #0d1b1b }
