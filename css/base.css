@@ -38,8 +38,14 @@ h2{
     text-align: center;
 }
 
-a { color: #0d1b1b }
-a:hover { background-color: rgba(68, 68, 68, 0.7) }
+a { 
+    color: #0d1b1b 
+}
+a:hover { 
+   /* background-color: rgba(68, 68, 68, 0.7) */
+    text-shadow: #4EC714 0px 0px 2px;
+    /*color: #4EC714;*/
+}
 
 h2 > a, h2 > span, header  a, h1 > a{
     color: inherit;
@@ -57,4 +63,13 @@ nav{
 
 h1{
     display: inline;
+}
+
+header{
+    border-bottom: 1px dotted #444;
+}
+
+#comments{
+    width: 700px;
+    margin: 0 auto;
 }
