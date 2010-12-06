@@ -11,7 +11,7 @@ But I ran into some (easily fixable) issues, which I'll share for posterity and 
 
 * When installing the dependencies, it complained about how `uuid-dev` was missing. A `sudo apt-get install uuid-dev` fixed that.
 * If you're like me and like copy-pasting lines of code that seem to long, and are reading the pdf version of the book, be careful with the '~' character: it will be copied as another one that isn't the /home/user shortcut. This is a preposterous one, I know, but it spew some errors about the sqlite database and stuff that might prove discouraging.
-* When trying to `make all install` mongrel2, it complained about not finding some zeromq library. Fixed it by going into the folder where I keep zeromq and running `sudo idconfig -v`.
+* When trying to `make all install` mongrel2, it complained about not finding some zeromq library. Fixed it by going into the folder where I keep zeromq and running `sudo ldconfig -v`.
 
 So, that's that, I'm off to learn about mongrel2.
 
