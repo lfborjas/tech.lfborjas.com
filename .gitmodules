@@ -1,3 +1,0 @@
-[submodule "experiments/reversi"]
-	path = experiments/reversi
-	url = git@git.lfborjas.com:reversi
