@@ -25,4 +25,32 @@ As the [manual says](http://www.beanshell.org/manual/bshmanual.html#Remote_Serve
 
 Can you imagine what teachers that -for some unfathomable reason- teach java could do with beanshell? Well, the kind of things that ruby teacher could do with [tryruby](http://tryruby.org/) I guess: having totally interactive classes! (Altough tryruby has an individual interpreter for each connected client and the beanshell server is actually the same instance for all, which is like really dangerous, so use with caution, and a helmet, and maybe an underprivileged user in your OS, but also cool as instances and classes are shared).
 
-Thus ends the story of my unholy foray into the uml-smitten world of java. 'Twas lots of fun, after all.
+###Update
+
+beanshell comes with a rather old version of java, so stuff like [generics](http://download.oracle.com/javase/tutorial/java/generics/index.html) doesn't work.
+
+Also, I wanted a REPL and beanshell is harldy one, so I wrote this little wrapper in [JRuby](http://www.jruby.org/):
+
+{%highlight ruby%}
+require "java"
+#gotta have the beanshell jar somewhere:
+require "/usr/local/src/bsh-2.0b4.jar"
+#cf. http://bogojoker.com/readline/
+require 'readline'
+#based on this: http://blogs.sun.com/coolstuff/entry/using_java_classes_in_jruby
+include_class Java::bsh.Interpreter
+
+i = Interpreter.new
+begin
+    while instr = Readline.readline('> ', true)
+        begin
+            puts "=> #{i.eval instr}"
+        rescue Java::bsh.EvalError => e
+            puts "!# #{e}"
+        end
+    end
+rescue Interrupt => e
+    system 'stty', stty_save
+    exit
+end
+{%endhighlight%}

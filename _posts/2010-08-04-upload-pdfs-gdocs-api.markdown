@@ -26,3 +26,5 @@ First, there was [this thread in google groups](http://code.google.com/p/gdata-i
 And voilà, like a hacked up frankenstein, we got pdf uploads working in the gdata python client. And a little grudge against google, because that bug has been there for like two and a half years! (so we suspect that it can't be that easy to solve, so expect a future post on how everything went to hell, I guess).
 
 So that was it, a line to add the API version header and another to change the folder URI and life shone again.
+
+*UPDATE*: here's a gist with the patch: <https://gist.github.com/759173>

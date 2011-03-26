@@ -18,8 +18,6 @@ time{
     text-align: center;
 }
 
-p { text-shadow: #fefefe 1px 1px 0px }
-
 h1, h2, header, nav{
     /*background-color: rgba(0, 0, 0, 0.691406);*/
     /*-webkit-background-clip: text;*/
