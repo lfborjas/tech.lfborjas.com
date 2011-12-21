@@ -4,7 +4,7 @@ layout: base
 
 <h2><a href="{{page.url}}" class="title-link"><span class="rss-title">{{page.title}}</span></a></h2>		
 <time>{{page.date|date:"%a, %b %d %Y"}}</time>		
-<article>
+<div class="article">
     <span class="rss-content">
     {%if content%}
         {{content}}
@@ -12,7 +12,7 @@ layout: base
         {{page.content}}
     {%endif%}
     </span>
-</article>		
+</div>		
 <!-- <span class="rss-id">http://www.lfborjas.com{{post.id}}</span> -->
 <!-- <span class="rss-link">http://www.lfborjas.com{{page.url}}</span> -->	
 <div id="comments">

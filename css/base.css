@@ -6,7 +6,7 @@ body {
     text-rendering: optimizeLegibility;
 }
 
-article{
+article, .article{
     width: 600px;
     margin: 0 auto;
 }
