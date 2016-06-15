@@ -162,19 +162,19 @@ It _evaluates_ each test in order and, if one is true, the value of expression w
 
 #Expressing a function
 
-We _define_ a function with the _lambda_ operation. Takes a list of parameters and an expression.
+We _define_ a function with the _fn_ operation (known as `lambda` traditionally). Takes a list of parameters and an expression.
 
 <span style="font-size: xx-large">
-(lambda (p<sub>0</sub> p<sub>1</sub> … p<sub>n</sub>) exp)
+(fn (p<sub>0</sub> p<sub>1</sub> … p<sub>n</sub>) exp)
 <br />
-or
+or, if you want to be fancy and mathematical:
 <br />
 (&lambda; (p<sub>0</sub> p<sub>1</sub> … p<sub>n</sub>) exp)
 </span>
 
 Where each `p` is a _parameter_.
 
-We _invoke_ a function taking its definition and giving it some actual values to work with.
+We _invoke_ (or call) a function taking its definition and giving it some actual values to work with.
 
 <span style="font-size: xx-large">
 
@@ -194,11 +194,11 @@ To apply a function:
 
 Example
 
-    ((lambda (x) (cons x '(b))) 'a)
+    ((fn (x) (cons x '(b))) 'a)
     ;=> (a b)
-    ((lambda (x y) (cons x (rest y))) 'z '(a b c))
+    ((fn (x y) (cons x (rest y))) 'z '(a b c))
     ;=> ???
-    ((lambda (f) (f '(b c))) (lambda (x) (cons 'a x)))
+    ((fn (f) (f '(b c))) (fn (x) (cons 'a x)))
     ;=> ???
 
 ---
@@ -209,7 +209,7 @@ The above could be called "anonymous" functions, because to apply them we have t
 
     (def x 3) ; define x to symbolize 3
     (def last
-        (lambda (l)
+        (fn (l)
             (cond 
               (= (rest l) '()) (first l)
               true             (last (rest l)))))
@@ -294,18 +294,27 @@ And just like that, we have recursion too! -- we'll revisit that, no worries!
       (= (first exp) 'cons)  (cons  (eval (frest exp) env)
                                     (eval (frrest exp) env))
       (= (first exp) 'cond)  (evcond (rest exp) env)
-      (= (first exp) 'lambda)  (list 'closure (rest exp) env)
+      (= (first exp) 'fn)  (list 'closure (rest exp) env)
       true (_apply (eval  (first exp) env)
                     (evlist (rest  exp) env))))
                     
-(defn apply [proc args]
+```
+
+---
+
+```clojure
+(defn _apply [proc args]
   (cond
     (= (first proc) 'closure) 
       (eval 
-        (frfrest proc) ;body of the procedure
-        (append ;build a new environment:
-          (pair-up (ffrest proc) args) ;map the formal arguments to the parameters
-          (frrest proc))) ;the environment that this proc was closed upon
+        ;body of the procedure
+        (frfrest proc)
+        ;build a new environment:
+        (append 
+          ;map the formal arguments to the parameters
+          (pair-up (ffrest proc) args)
+          ;the environment that this proc was closed upon
+          (frrest proc)))
     true 'unrecognized-expression))
 ```
 
@@ -342,20 +351,84 @@ The second argument, now we realize, is the __environment__ in which the express
     
     (eval '(cond (coll? x) 'list true 'atom) '((x '(a b))))
     ;=> ???
-    (eval '(f '(b c)) '((f (lambda (x) (cons 'a x)))))
+    (eval '(f '(b c)) '((f (fn (x) (cons 'a x)))))
     ;=> ???
-    (eval '((lambda (x) (coll? x)) '(1 2)) '((2 true)))
+    (eval '((fn (x) (coll? x)) '(1 2)) '((2 true)))
     ;=> ???
     
+
+---
+
+# Taking another look
+
+* `eval` is just a conditional block.
+* The first clause handles atoms: looks them up in the environment.
+* The second clause, for `quote`, simply returns its argument without evaluating.
+* The next five clauses, for `coll?, =, first, rest` and `cons` call those functions after evaluating the arguments.
+* The clause for `cond` calls an auxiliary function, `evcond`, that goes through all pairs of conditions evaluating the predicates, and returns one of the associated expressions.
+* The clause for `fn` returns a "closure", which is simply a list that has an expression and an environment with values for each variable (or "label") in the expression.
+* The default clause assumes that the first element is a function, and "applies" expression with the values of its arguments fully evaluated, by the `evlist` auxiliary function.
+* The auxiliary function `apply` discards the `closure` label, only useful to identify such a construct, and takes the actual expression and evaluates it building a new environment with the results. This can take a long time!
+
+---
+
+# A full evaluation
+
+```clojure
+(eval ( (fn [x] (_not x)) false ) 
+        ((true true) (false false) 
+         (_not (fn [e] (cond e false true true)))))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (evlist (false) ((true true) (false false) (_not ...))))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (cond (_empty? (false) '()) 
+        true (cons (eval false ((true true) (false false) (_not ...))) 
+                   (evlist () ((true true) (false false) (_not ...))) )))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (cond (_empty? (false) '()) 
+         true (cons 
+                (eval false ((true true) (false false) (_not ...))) 
+                '() )))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (cond (_empty? (false) '()) true (cons false '() )))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (false))
+(_apply ('closure ([x] (_not x)) ((true true) (false false) (_not ...)))
+        (false))
+
+```
+
+---
+
+```clojure
+(_apply (eval (_not x) 
+              (append 
+                (pair-up x (false)) 
+                ((true true) (false false) (_not ...)))
+        (false)))
+(eval (_not x) 
+      (append 
+       (pair-up x (false)) ((true true) (false false) (_not ...))))
+(eval (_not x) 
+      ((x false) 
+      (true true) (false false) 
+      (_not (fn [e] (cond e false true true)))))
+(eval ( 
+        (fn [e] (cond e false true true) false) 
+        ((x false) (true true) (false false) (_not ...))))
+;and we start all over again, until we get 'true
+```
 
 ---
 
 # The takeaways
 
 * We can create very thorough models of a domain within very narrow limitations.
-* A language powerful enough to implement many high-level notions (recursion, first class functions, etc.) doesn't have to be complex.
+* We can concoct a model of computation powerful enough to describe algorithms, but simple enough to hold in one's head.
 * A consistent abstraction goes a long way.
-* An academic fun bit that could perhaps inform DSLs and such: homoiconicity, _the data being the code (or the syntax tree)_
+* An academic fun bit that could perhaps inform DSLs and such: homoiconicity, _the data being the code (or the syntax tree)_.
+
+---
 
 #Further reading
 
@@ -366,6 +439,7 @@ The second argument, now we realize, is the __environment__ in which the express
 * [A spanish version of this lecture](http://lfborjas.com/minimalisp)
 * [My implementation in clojure](https://github.com/lfborjas/minimalisp/tree/clojure)
 * [An implementation in python with side effects and sequential evaluation](http://norvig.com/lispy.html)
+
     </textarea>
     <script src="remark.js" type="text/javascript">
     </script>
