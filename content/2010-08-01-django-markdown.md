@@ -1,12 +1,16 @@
----
-layout: post
-title: Markdown in django
-tags: [django, markdown, python, javascript]
-time: 20:00
----
++++
+title = "Markdown in django"
+date = 2010-08-01
+
+[taxonomies]
+tags =  ["django", "markdown", "python", "javascript"]
++++
 
 <p>Last week, I added markdown support to a little blog engine I wrote for a django tutorial. And well, I accomplished it in minutes! I like markdown because is <em>really</em> easy to write and generates amazing html. It is presented <a href="http://daringfireball.net/projects/markdown/syntax">here</a> and the syntax is explained neatly in <a href="http://stackoverflow.com/editing-help">Stack Overflow</a>, and they use it, too. </p> 
 <p>My approach was really simple: I wanted to write the posts in markdown with a preview (like in the question edition in <a href="http://stackoverflow.com">Stack Overflow</a>), store the posts in markdown and display them in html.</p> 
+
+<!-- more -->
+
 <p>So, the steps:<br /> 
 </p> 
 <ol> 
@@ -20,4 +24,3 @@ time: 20:00
  
  <p>And that's it, you have markdown in your app! Don't make humans edit raw html ever again!</p> 
  <p>-More info can be found <a href="http://www.freewisdom.org/projects/python-markdown/Django">here</a></p> 
-

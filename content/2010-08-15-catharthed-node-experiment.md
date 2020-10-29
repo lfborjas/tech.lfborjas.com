@@ -1,13 +1,16 @@
----
-layout: post
-title: Catharted.info, a node.js experiment
-tags: [node.js, express, haml, sass]
-time: 3:28
----
++++
+title = "Catharted.info, a node.js experiment"
+
+[taxonomies]
+tags =  ["node.js", "express", "haml", "sass"]
++++
 
 Let's go and rant a little somewhere.
 
 So, I released to the wild today an experimental little site: [catharted info](http://www.catharted.info) . The rules there are simple: rant a little, read other rants, watch them disappear forever. The source is open and you're free to browse it in [the github repository](http://github.com/lfborjas/catharted).
+
+<!-- more -->
+
 
 My reasons for building this site were two: 
 

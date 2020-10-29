@@ -1,14 +1,17 @@
----
-layout: post
-title: Ruby jewelry
-tags: [ruby,rubygems]
-time: 18:58
----
++++
+title = "Ruby jewelry"
+
+[taxonomies]
+tags =  ["ruby", "rubygems"]
++++
 Yesterday I had no money to go out and the weather sucked. So I decided to pick up [one](http://serendipitron.tumblr.com/) of my side projects and hack for a while.
 
 For that project I need to fundamental components, a way of extracting keywords in a text and a wrapper for the public rss feeds of [delicious.com](http://delicious.com). So I created [webtagger](http://github.com/lfborjas/webtagger) and [deliruby](http://github.com/lfborjas/deliruby) (this morning I thought to rename it to "delirious", which is cooler, but, well, nevermind) and released them as opensource gems for whomever wants to to hack them and use them. I think it's cool to be able to release something easy to use for others (using `gem install` instead of downloading the source, extracting it, installing it and all that fuzz).
 
 So, how *do* you create a gem?
+
+<!-- more -->
+
 
 Easy! I used [jeweler](http://github.com/technicalpickles/jeweler) to create the gem skeleton and manage it and [rubygems.org](http://docs.rubygems.org/read/chapter/6) to host it, and here's how:
 

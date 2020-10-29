@@ -1,13 +1,15 @@
----
-layout: post
-title: "Git in the classroom: cloning/pushing exams in programming courses"
-tags: [git, ruby, linux, prgmr, webdev]
-time: 19:54
----
++++
+
+title = "Git in the classroom: cloning/pushing exams in programming courses"
+[taxonomies]
+tags =  ["git", "ruby", "linux", "prgmr", "webdev"]
++++
 
 I had to apply an exam this week for a web development for beginners course I'm teaching. We're using ruby for the server side for a couple of reasons: [heroku](http://heroku.com/) is an excellent option for one's first deployments and I wanted to get a better grip on [Ruby on rails 3](http://rubyonrails.org/) and html5 for my own improvement (and I've found that there's no better way to learn stuff the good way than teaching them). 
 
 No decent developer can survive without some sort of source control management. The one I know more of is [git](http://git-scm.com/) and I'm a huge fan of [github](https://github.com/). We're actually using [github organizations](http://github.com/blog/674-introducing-organizations) to manage the class projects (the github staff is really great, they've let me use private repositories for the student groups at no extra charge). 
+
+<!-- more -->
 
 The exam for this period was a practical one: I gave them a site (that I wrote and deployed on heroku) and they had to reproduce it's functionality in a day. I like that kind of exams: they're a learning experience themselves. But the week before it, i found myself re-thinking the delivery method. You see, back in the day, those kinds of exams were either sent to the teacher by email or uploaded to the college's private file server. I wanted my students to practice their git so my first thought was to ask them to upload their solutions as a [git bundle](http://progit.org/2010/03/10/bundles.html) to our [course communication platform](http://class.io/), yet, after that, I thought: "hey, wouldn't it be cool that they could just `git push` their exam and be done with it". The idea was compelling: instead of waiting till the end of the day -the exam deadline- to upload their exams, they could just push as many times they wished and the last push they made before the deadline was going to be considered as their final response. Motivated by this, I dedicated the days before the exam to it.
 
@@ -24,5 +26,3 @@ So at the end I had the 15 private repos forked from a template that could be cl
 I had my share of trouble, though: first, *one day* after acquiring the vps over at prgmr.com I found myself victim of a man in the middle attack in ssh: I was doing tests with the gitosis server when, while pushing a repo, I was warned that "someone could be doing nasty stuff". I logged in to the server and checked the ssh files (which, if changed, could change the fingerprint and, thus, be detected as an intrusion in the communication), they weren't changed. So I found some advice on the internerd that changing my ssh port to a non-standard one and restricting access by keys and users could avoid that kind of attack. I applied it and solved it, but that meant that yesterday I had to invest some minutes of the exam asking the students to change their ssh configuration to connect via the other port -not the 22- to my git server. Solving that required a couple of angry hours. But it wasn't the end of the problems: close to the deadline some students contacted me saying that when trying to push they were receiving a `connection refused` error. I had experienced that the day before when working in college, but attributed it to the firewall. I am not sure as of today, but it seems that it was actually an error in the server side: one had to push like twenty times before the server accepted the connection, so some students ended up sending me their work via email after all.
 
 Nevertheless, I really like the idea of using git to apply evaluations, and am thinking of creating a web interface to let teachers create exams/homeworks that will translate into private git repos to which the students could push. There are some parts of the process I'd like to automate and simplify (I'd like to offer the service to people that know enough git to `clone/pull/push` , but have no time to set up private hosting servers and stuff) and there are two more exams to come for this class, so I'll keep experimenting. I'm a little concerned about prgmr, though, I was attacked twice (the first time with a dictionary attack before I even logged in for the first time) and had that unfortunate incident with the `sshd` (which could be my fault or because of the technical limitations of the vps I chose). In their defense, they have a really cool customer support (they don't assume you are stupid and answer really fast). 
-
-

@@ -1,14 +1,18 @@
----
-layout: post
-title: Git for paranoids
-tags: [git, backups]
-time: 18:00
----
++++
+title = "Git for paranoids"
+
+[taxonomies]
+tags =  ["git", "backups"]
++++
 
 <p>So, git, I assume you're familiar with it -if not, take a look at <a title="Git homepage" target="_blank" href="http://git-scm.com/"> this</a> and <a title="Readings about git" target="_blank" href="http://gitready.com/"> this</a> - . Those of you familiar with it may also be familiar with <a title="Github homepage" target="_blank" href="http://github.com/">Github</a>, the awesome git hosting service. And those of you who may have used github long enough, are thankful for being able to rest assured that your code will be on a reliable server and never, ever, get lost, even if you computer catches fire and then is stole by ghosts.</p> 
 <p>But, what happens when <a title="Github error" target="_blank" href="http://www.flickr.com/photos/robhudson/4058660340/"> the unicorn strikes</a>? Those very rare moments when something happens and github is down. With your code. Presumably when you most need to push or pull changes. That stuff happens, it's the law of nature, and not even a super rad site like github is exempt from some downtime, you know that. <strong>But what about your code?</strong></p> 
 <p>I came up with some kind of solution for my projects, and no, it's not to store it in a usb every five seconds or having a magical RAID, it's just probability: for my really important projects, you can simply create backup repositories in other git hosting websites!</p> 
 <p>I usually have two options beside github: <a title="Codaset: another git hosting site" target="_blank" href="http://codaset.com/">Codaset</a> and <a title="Gitorious: yet another git hosting site" target="_blank" href="http://gitorious.org/">Gitorious</a>. And both have their advantages and disadvantages:</p> 
+
+<!-- more -->
+
+
 <ul> 
 <li>Codaset lets you create free private repositories, yet in github, you pay for that. But it's like impossible to fork a project, at least is not as straightforward as in github</li> 
 <li>Gitorious has different semantics for repositories: you create a <em>project</em> and in it, the repositories; so it's weird and its good or bad, depending on tastes</li> 

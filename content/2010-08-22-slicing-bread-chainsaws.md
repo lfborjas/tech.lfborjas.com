@@ -1,15 +1,18 @@
----
-layout: post
-title: Slicing bread with chainsaws, one size doesn't fit all webdev needs
-tags: [microframeworks, ruby, node.js, sinatra, rails, django]
-time: 00:40
----
++++
+title = "Slicing bread with chainsaws, one size doesn't fit all webdev needs"
+
+[taxonomies]
+tags =  ["microframeworks", "ruby", "node.js", "sinatra", "rails", "django"]
+
++++
 
 Ok, world, big fat disclaimer here: I'm not an experienced developer in all of the web frameworks that have existed in the history of ever (I've only done kinda serious stuff in three of 'em) and this thing I'm saying here is more of a hypothesis that I'm currently putting to experience's scrutiny than a rational, exhaustively thought, conclusion. Now, read on.
 
 Nowadays, there are lots of web frameworks, and people have done wonderful stuff with them (twitter was written [initially](http://techcrunch.com/2008/05/01/twitter-said-to-be-abandoning-ruby-on-rails/) with ruby on rails, p.e.). And, truly, they have allowed the now commonplace fast, yet robust and standards compliant, development of big projects. But what about the little projects? Those little apps with at most a couple of tables in a database and a simple service to offer? Well, the really cool and experienced developers just do _that_ in the big frameworks too...
 
 Ay, there's the rub that makes big frameworks of so big a hype.
+
+<!-- more -->
 
 You see, we're used to (and, after all, it was the inception of) big ol' web applications with lots of functionality and storing everything in the universe because in the old days (you know, probably a couple of years ago) *every website was isolated*, little or none applications depended on (or aided) others like now: we have APIs, single sign on protocols, services and whatnot: the web is no more a place for "sites" because now it's full of applications which interact with each other and feed each other, thus evolving into more and more atomic services and mashups. 
 And even more, in the mashups world, you could write an entire, useful, web application *almost* entirely with client side code, with your server barely doing more than storing some stuff in a database and serving the files. (Don't believe me? Let's say you want user authentication: [facebook](http://developers.facebook.com/docs/reference/javascript/FB.login) and [twitter](http://dev.twitter.com/anywhere/begin#login-signup)  have pure javascript SSO facilities. You want some real world info? There are the [google ajax apis](http://code.google.com/apis/ajax/) ).

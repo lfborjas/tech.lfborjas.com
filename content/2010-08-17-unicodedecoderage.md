@@ -1,11 +1,14 @@
----
-layout: post
-title: Turning into rageguy, python and the UnicodeDecodeError
-tags: [python, django]
-time: 18:01
----
++++
+
+title = " Turning into rageguy, python and the UnicodeDecodeError"
+[taxonomies]
+tags =  ["python", "django"]
++++
 
 My main projects are in Django, and I've become accustomed to developing in english. But my main audience speaks spanish. So crazy stuff happens when other people test my apps and we see, astonished and enraged, a  `UnicodeDecodeError`. In fact, I took a picture of myself when such an error occurred:
+
+<!-- more -->
+
 
 ![UnicodeDecodeRage][rageguy]
 

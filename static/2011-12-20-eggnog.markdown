@@ -1,9 +1,10 @@
----
-layout: post
-title: Awesome Eggnog
-tags: [food]
-time: 02:13
----
++++
+
+title = " Awesome Eggnog
+[taxonomies]
+tags =  [food]
+date = 02:13
++++
 
 So this sunday a friend invited me and some other friends to her house to make eggnog.
 But it wasn't your run-of-the-mill holiday eggnog, socially acceptable preamble to

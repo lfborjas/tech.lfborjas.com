@@ -1,11 +1,14 @@
----
-layout: post
-title: The unholy alliance, discovering a command line java interpreter
-tags: [linux, java, scripting]
-time: 01:24
----
++++
+title = " The unholy alliance, discovering a command line java interpreter"
+
+[taxonomies]
+tags =  ["linux", "java", "scripting"]
++++
 
 I'm gonna give a little talk about java to some people in a couple of days. Yes, *java*, the new cobol, the language I secretly know, lest I'm banished from the cool kids club. But it has cool stuff. The java virtual machine, the bytecode compiling, the support for unicode and the blessed jruby. I mean, we can run [ruby on appengine](http://code.google.com/p/appengine-jruby/) thanks to java! So get that frown off your face and let me tell you 'bout something cool.
+
+<!-- more -->
+
 
 Remember that talk I was talking about before falling into an apologetic digression? Well, I'm writing a slideshow in [showoff](http://github.com/schacon/showoff) so people can follow it on the internerd and maybe fork it for their own teaching ends.I have some example code in java, which I intend to show in a demo to clarify some concepts (namely, inheritance and polymorphism). At first I thought of writing a `main` and then saying "see, we compile this and run this and stuff appears on the terminal, cool huh?". But python, javascript and ruby have spoiled me. I wanted interaction. I didn't want the public saying "but, what if we change so and so, huh, HUH?" and me saying "oh, lets just open the main again, and write and compile and run and hope I didn't forget a semicolon". No. I wanted an interpreter. I wanted to write `javashell` or something of the sort and hack the hack and walk the walk, writing a line and pressing enter and watching the outcome and bowing gently as the crowd bursted in applause at my hello worlds.
 

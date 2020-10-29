@@ -1,12 +1,12 @@
----
-layout: post
-title: Uploading pdfs to google docs via the gdata python api client
-tags: [gdocs, python]
-time: 23:06
----
++++
+title = "Uploading pdfs to google docs via the gdata python api client"
+
+[taxonomies]
+tags =  ["gdocs", "python"]
++++
 
 And remain sane and alive
----------------------------------------
+------------------------------------+++
 
 Here's the deal, the [Google docs API](http://code.google.com/intl/es/apis/documents/) is really neat, if you can [dance oauth](http://www.slideshare.net/episod/linkedin-oauth-zero-to-hero). But, by allowing to do all that crazy stuff with documents is bound to be really complicated -just read that xml, is like something only robots should ever gaze at!.
 But the nice guys over at google have developed some client libraries, and one of those is the [gdata python client library](http://code.google.com/apis/documents/docs/1.0/developers_guide_python.html). Which combines all that power with the python inherent simplicity.
@@ -16,6 +16,9 @@ But there's a _caveat_: there's so much stuff that the documentation is sometime
 So, let's just show our users a message that says "oops, bummer, no can do". 
 
 Or not. 
+
+<!-- more -->
+
 
 We're working on a project that integrates with google docs were possibly 90% of the user document uploads will surely be pdf files. So something had to be done.
 
