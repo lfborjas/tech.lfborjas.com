@@ -20,7 +20,18 @@ tags =  ["django", "markdown", "python", "javascript"]
 <li>Download <code>showdown.js</code> and copy the minified js to your static files folder. (you can get it from <a href="http://attacklab.net/showdown/">the project homepage</a>)</li> 
 <li>In a template for edition, let's say you have a textarea with id <code>id_body</code> and want to show the preview. Well, add a  <code>div</code> -let's call it <code>preview</code> and the following javascript (added somewhere in your <code>&lt;head&gt;</code>.</li> 
 </ol> 
-<script src="http://gist.github.com/497703.js"> </script> 
+
+```js
+$(function(){
+        var converter = new Showdown.converter();
+    	function update_description_preview(){
+        	$('#preview').html(converter.makeHtml($("#id_body").val()));
+    	}
+    	$("#id_body").keyup(function(){
+        	update_description_preview();
+    	});	
+});
+```
  
  <p>And that's it, you have markdown in your app! Don't make humans edit raw html ever again!</p> 
  <p>-More info can be found <a href="http://www.freewisdom.org/projects/python-markdown/Django">here</a></p> 
