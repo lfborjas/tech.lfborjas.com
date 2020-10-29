@@ -1,10 +1,12 @@
 # Hello indeed, world
 
-Find me at (tech.lfborjas.com)[tech.lfborjas.com]. 
+Find me at [tech.lfborjas.com](tech.lfborjas.com). 
 
 ## What's here?
 
-An abandoned tech blog using Jekyll, mostly, but also a few interesting things:
+~~An abandoned tech blog using Jekyll, mostly, but also a few interesting things:~~
+
+2020 update: this blog is no longer abandoned! But it's also no longer written in Jekyll: I don't work with Ruby anymore, if I can help it. This blog is now built in [Zola](https://www.getzola.org/)
 
 ### Javascript experiments
 
@@ -45,5 +47,3 @@ When I taught, I had a bunch of github organizations and projects created therei
 ### Neither here nor there
 
 Honorable mention to my first job in startupland: Escolarea/Class.io. Still around as a company, but when I was there we were trying to build a business around a Django app that allowed teachers to connect with students in a "microblogging" manner. My friend, the other engineer, and I, learned a lot and produced a bunch of open source forks. https://github.com/escolarea-labs 
-
-
