@@ -1,0 +1,119 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>$$$ DWEMTHY_S ARRAY ^!^ A RUBY MINI_DUNGEON ^!^ ONLY 60 LINES OF CODE ^!^ DWEMTY IS WATCHING ^!^ A STALE BREATH IS ON YOUR NAPE, IS IT NOT ?? ^!^ DWEMTHY COMETH $$$</title>
+    <link rel="stylesheet" type="text/css" href="dwemthy.css" />
+    <script type="text/javascript" src="jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="jquery.console.js"></script>
+    <script type="text/javascript" src="dwemthy.js"></script>
+    <!-- Everything beyond this point is user-customized -->
+    <script type="text/javascript">
+        $(document).ready(function(){
+         var foe = theArray.pop();
+         var started = false;
+         var console1 = $('<div class="console1">');
+         $('#headar').prepend(console1);
+         var controller1 = console1.console({
+           promptLabel: 'Choose your attack> ',
+           welcomeMessage: "Welcome to Dwemthy's Array: deep in this array, a Dragon is going to kill you, or is it?\n\n Fight it's minions and obtain new weapons in your quest!\n\n Type 'start' to begin!",
+           commandValidate:function(line){
+             command = line.trim(); 
+             if (!started && command != "start" && !hero.weapons.hasOwnProperty(command)) return false;
+             else return true;
+           },
+           commandHandle:function(line){
+                if(hero.life <= 0){
+                    return [{msg: "You're too dead to keep playing!", className: "menu"}];
+                    }
+                if(!foe){
+                    return [{msg:"Game over, bask in thine glory, hero, for you have won!", className: "menu"}]
+                }
+               menu = "Available attacks:\n";
+               for(weapon in hero.weapons){
+                menu += weapon+"\n";
+                }
+               if (line == "start"){
+                 started = true;
+                 return [{msg: foe.name+" awaits you, get ready!\n\n"+menu,
+                          className: "menu"}];
+               }
+               reply = [];
+               attack = hero.fight(foe, hero.weapons[ line ]);
+               if(foe.life <= 0){
+                   yours = "You killed " + foe.name + "!\n";
+                   for(item in foe.items){
+                       yours += "and obtained "+ item+"\n";
+                       hero.weapons[item] = foe.items[item];
+                   }
+                   if(theArray.length){
+                       yours += "But beware, "+ (foe=theArray.pop()).name + " has emerged!";
+                   }else{
+                       yours += "Whoa, you've decimated dwemthy's array!";
+                       foe = null;
+                   }
+                   reply.push({msg: yours, className: "your-hit"});
+               }else{
+                    reply.push({msg: "You hit "+foe.name+ " with "+ attack + " points of damage", className: "your-hit"});
+                    theirs = foe.fight(hero);
+                    reply.push({msg: foe.name+" hits you with "+theirs+" points of damage ", className: "their-hit"});
+                    if(hero.life <= 0)
+                        reply.push({msg: "Game over!", className: "menu"});
+                    else
+                        reply.push({msg: menu, className: "menu"});
+               }
+               return reply;
+           },
+           autofocus:true,
+           animateScroll:true,
+           promptHistory:true,
+           /*charInsertTrigger:function(keycode,line){
+              // Let you type until you press a-z
+              // Never allow zero.
+              return !line.match(/[a-z]+/) && keycode != '0'.charCodeAt(0);
+           }*/
+         });
+       });
+    </script>
+    <style type="text/css" media="screen">
+      /* First console */
+      div.console1 { font-size: 14px }
+      div.console1 div.jquery-console-inner 
+       { width:400px; height:800px; background:#034; padding:0.5em;
+         overflow:auto }
+      div.console1 div.jquery-console-prompt-box
+       { color:#fff; font-family:monospace; }
+      div.console1 div.jquery-console-focus span.jquery-console-cursor 
+       { background:#fefefe; color:#333; font-weight:bold }
+      div.console1 div.jquery-console-message-error
+       { color:#ef0505; font-family:sans-serif; font-weight:bold;
+         padding:0.1em; }
+      div.console1 div.your-hit
+       { color:#1ad027; font-family:monospace;
+         padding:0.1em; }
+      div.console1 div.their-hit
+       { color:#f55; font-family:monospace;
+         padding:0.1em; }
+      div.console1 div.menu, div.console1 div.jquery-console-welcome
+       { color:#efe; font-family:monospace;
+         padding:0.1em; }
+      div.console1 span.jquery-console-prompt-label { font-weight:bold }
+    </style>
+</head>
+<body>
+<div id="dwemthy">
+<div id="dwemthycastle">
+    <div class="writ">
+           You might want want to read the <a href="http://mislav.uniqpath.com/poignant-guide/dwemthy/">original,whole story</a>
+    </div>
+	<div id="headar"><img src="http://mislav.uniqpath.com/poignant-guide/images/dwemthy-header-dissolve.png" /><img src="http://mislav.uniqpath.com/poignant-guide/images/dwemthy-logo.gif" /></div>
+</div>
+
+	<div class="comik"><img src="http://mislav.uniqpath.com/poignant-guide/images/dwemthy-asweome.gif" /></div>
+
+    <div id="banerr2">
+        <p>...[just one minuscule tableau from <a href="http://mislav.uniqpath.com/poignant-guide">why's (poignant) guide to ruby</a>]...</p>
+    </div>
+    
+</body>
+</html>
