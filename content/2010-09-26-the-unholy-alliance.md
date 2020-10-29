@@ -34,7 +34,7 @@ beanshell comes with a rather old version of java, so stuff like [generics](http
 
 Also, I wanted a REPL and beanshell is harldy one, so I wrote this little wrapper in [JRuby](http://www.jruby.org/):
 
-{%highlight ruby%}
+```ruby
 require "java"
 #gotta have the beanshell jar somewhere:
 require "/usr/local/src/bsh-2.0b4.jar"
@@ -56,4 +56,4 @@ rescue Interrupt => e
     system 'stty', stty_save
     exit
 end
-{%endhighlight%}
+```

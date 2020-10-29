@@ -5,7 +5,7 @@ title = "Luis Borjas Reyes - tech blog"
 description = "Notes on tech, personal projects and working in the industry."
 
 # Whether to automatically compile all Sass files in the sass directory
-compile_sass = false
+compile_sass = true
 
 theme = "after-dark"
 
@@ -30,3 +30,5 @@ after_dark_menu = [
     {url = "$BASE_URL/tags", name = "Tags"},
     {url = "https://www.lfborjas.com", name = "About"},
 ]
+
+after_dark_title = "lfborjas: tech blog"
