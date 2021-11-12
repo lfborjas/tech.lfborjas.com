@@ -15,4 +15,4 @@ jobs:
         # Target branch
         PAGES_BRANCH: gh-pages
         # Provide personal access token
-        TOKEN: $GITHUB_ACTOR:${{ secrets.TOKEN }}
+        TOKEN: $GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}
