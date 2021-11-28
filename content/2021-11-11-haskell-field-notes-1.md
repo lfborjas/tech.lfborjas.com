@@ -137,7 +137,8 @@ I've used the tried and true [RIO](https://hackage.haskell.org/package/rio) [bef
 
 Polysemy was my first candidate, but the aforementioned talk and the [mea culpa blog post](https://reasonablypolymorphic.com/blog/mea-culpa/) scared me away from it. Alexis' own [`freer-simple`](https://hackage.haskell.org/package/freer-simple) is probably the next best thing in terms of ease of use, but [`fused-effects`](https://hackage.haskell.org/package/fused-effects) with its promise of speed and the very excellent foundation
 in the (extremely approachable!) [Fused Effects paper](https://people.cs.kuleuven.be/~tom.schrijvers/Research/papers/mpc2015.pdf) convinced me to give it a try. There's definitely quite a bit of ceremony, but I like
-the very explicit approach they take, both engineer-y and mathematically elegant. Ideally, we'll get [eff](https://github.com/hasura/eff) in the near future!
+the very explicit approach they take, both engineer-y and mathematically elegant. Ideally, we'll get [eff](https://github.com/hasura/eff) in the near future! 
+[`effectful`](https://github.com/arybczak/effectful) also looks quite promising, but, just like `rel8`, it came out much later than the start of this project.
 
 Or maybe we [don't need effects?](https://喵.世界/2021/09/14/redundant-constraints/)
 
@@ -193,8 +194,8 @@ instance
 together.)
 
 **Summary** I'm happy with `fused-effects` in both projects I've worked on this year, but I'm sure `RIO`, a
-small transformers stack, or one of the friendlier, "less powerful" effect libraries would be enough for
-a web app. This seems to be a rather mercurial area in the community right now, but I do believe there's something
+small transformers stack, or one of the friendlier, "less powerful" effect libraries such as [`effectful`](https://github.com/arybczak/effectful) 
+would be enough for a web app. This seems to be a rather mercurial area in the community right now, but I do believe there's something
 sensible in being explicit in separating the _how_ and the _what_ of the myriad side effects and app of this nature
 can have.
 
