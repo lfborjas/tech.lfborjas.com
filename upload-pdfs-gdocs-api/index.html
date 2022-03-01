@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Uploading pdfs to google docs via the gdata python api client</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>3 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2010-08-04
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>And remain sane and alive
+------------------------------------+++</p>
+<p>Here's the deal, the <a href="http://code.google.com/intl/es/apis/documents/">Google docs API</a> is really neat, if you can <a href="http://www.slideshare.net/episod/linkedin-oauth-zero-to-hero">dance oauth</a>. But, by allowing to do all that crazy stuff with documents is bound to be really complicated -just read that xml, is like something only robots should ever gaze at!.
+But the nice guys over at google have developed some client libraries, and one of those is the <a href="http://code.google.com/apis/documents/docs/1.0/developers_guide_python.html">gdata python client library</a>. Which combines all that power with the python inherent simplicity.</p>
+<p>But there's a <em>caveat</em>: there's so much stuff that the documentation is sometimes outdated or just plain wrong, as is the case with pdf uploads via the version 1.0 of the API. They <a href="http://code.google.com/intl/es/apis/documents/faq.html#WhatKindOfFilesCanIUpload">would swear</a> that you can upload pdf files. But no, you can't, not with old versions of the client nor with the latest release (at least as of the writing of this post, the version 2.0.11).</p>
+<p>So, let's just show our users a message that says &quot;oops, bummer, no can do&quot;. </p>
+<p>Or not. </p>
+<span id="continue-reading"></span>
+<p>We're working on a project that integrates with google docs were possibly 90% of the user document uploads will surely be pdf files. So something had to be done.</p>
+<p>After a couple of days of swearing and trying kinda hard, we found a solution, or something like that.</p>
+<p>First, there was <a href="http://code.google.com/p/gdata-issues/issues/detail?id=591#c77">this thread in google groups</a> that says you should alter the code to force it to use the version 3 of the api (instead of the default, which is the version 1). <em><strong>but</strong></em> that resulted in a <code>invalid request uri</code> error, which we solved with this somewhat <a href="http://www.google.co.uk/support/forum/p/apps-apis/thread?tid=4555f0bcae380766&amp;hl=en">hacky hack</a> which basically consists of changing the URIs of the docs to adhere to the standard in the new API version.</p>
+<p>And voilà, like a hacked up frankenstein, we got pdf uploads working in the gdata python client. And a little grudge against google, because that bug has been there for like two and a half years! (so we suspect that it can't be that easy to solve, so expect a future post on how everything went to hell, I guess).</p>
+<p>So that was it, a line to add the API version header and another to change the folder URI and life shone again.</p>
+<p><em>UPDATE</em>: here's a gist with the patch: <a href="https://gist.github.com/759173">https://gist.github.com/759173</a></p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/gdocs/">gdocs</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/python/">python</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

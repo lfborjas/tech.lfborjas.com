@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Installing NixOS on the Intel NUC</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>4 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2022-03-01
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>I recently got a NUC 11 kit, got a <a href="https://www.amazon.com/gp/product/B08GLX7TNT/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&amp;psc=1">Samsung SSD</a> 
+and <a href="https://www.amazon.com/gp/product/B08FBNQXC4/ref=ppx_yo_dt_b_asin_title_o03_s00?ie=UTF8&amp;psc=1">quite a bit of RAM</a>, wanted to follow <a href="https://nixos.org/manual/nixos/stable/index.html#sec-installation-summary">the official guide</a> to
+installing NixOS 21.11 from a USB flash drive, but I ran into a few snags, especially when doing the partitioning of the drive. </p>
+<span id="continue-reading"></span><h2 id="booting">Booting</h2>
+<p>The NUC (at least version 11,) defaults to Secure Boot. If you're trying to boot from a &quot;live CD&quot; <a href="https://nixos.org/manual/nixos/stable/index.html#sec-installation-additional-notes">in a USB stick</a>, it will error out with a &quot;secure boot violation.&quot;
+This can be disabled from the graphical configuration interface that comes up when pressing <code>F2</code> as the computer boots and following <a href="https://www.intel.com/content/www/us/en/support/articles/000038401/intel-nuc/intel-nuc-kits.html">these steps as documented by Intel</a></p>
+<h2 id="partitioning-the-ssd">Partitioning the SSD</h2>
+<p>NixOS recommends 512MB for the boot partition, 8GB for swap and the rest for the main partition. I didn't want to stray from that even though I have a 1TB disk
+and 32GB RAM (which <a href="https://itsfoss.com/swap-size/">some sources say should be given up to 38GB swap</a>, even then the commands in the <a href="https://nixos.org/manual/nixos/stable/index.html#sec-installation-summary">installation summary</a> seems to miss
+a few things for these kinds of disks. </p>
+<p>Creating the main partition went as documented by NixOS:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;"># parted /dev/sda -- mklabel gpt
+# parted /dev/sda -- mkpart primary 512MiB -8GiB
+</span></code></pre>
+<p>However, when creating the the swap partition, I got the <code>not aligned</code> warning <a href="https://discourse.nixos.org/t/following-install-gave-warning-the-resulting-partition-is-not-properly-aligned-for-best-performance/5335">someone else found</a>;
+just as the <a href="https://wiki.archlinux.org/title/Parted#Warnings">Arch Linux wiki warns</a>, the alignment depends on the sector size, so one can't just say &quot;start
+this partition at 8 GiB from the end&quot; because that may not align depending on the sector size (in my case, 2048s.) I didn't want to &quot;approximate&quot; using percentage points
+as the aforementioned nixos ticket says, potentially losing some swap size. Fortunately, I found this <a href="https://blog.hqcodeshop.fi/archives/273-GNU-Parted-Solving-the-dreaded-The-resulting-partition-is-not-properly-aligned-for-best-performance.html">rando post</a>
+that does a deeper dive into this issue... except that the post was useless for my particular issue (a swap partition, not the main partition...) however, <a href="https://blog.hqcodeshop.fi/archives/273-GNU-Parted-Solving-the-dreaded-The-resulting-partition-is-not-properly-aligned-for-best-performance.html#c2166">a <em>comment</em> 
+in the post</a> gave me what I needed:</p>
+<blockquote>
+<p>it internally generates a range of acceptable values. This range is centered on the value you specify, and extends equally on both sides by half the unit size you used
+Since optimal alignment typically seems to be 1MiB-aligned, the K and M units will often not have sufficient room to reach optimal alignment. Specifying positions in G should have plenty room, but % is usually also fine.</p>
+</blockquote>
+<p>So, the swap partition command in my case worked (with no warnings and no problems for the next step, the boot partition: )</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;"># parted /dev/sda -- mkpart swap linux-swap -8GB 100%
+</span></code></pre>
+<p>Literally, just say <code>8GB</code> instead of <code>8GiB</code> to let <code>parted</code> figure out exactly where to start the partition between <code>7.5GB</code> and <code>8.5GB</code> instead of trying to force it to
+start at exactly 8GiB. Note also that I gave the partition the label <code>swap</code>, instead of <code>primary</code>, which it seems is <a href="https://github.com/NixOS/nixpkgs/issues/161903">a mistake in the current nixos documentation</a></p>
+<p>The remaining commands (reproduced below) work just as documented, as well as the rest of the guide.</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;"># parted /dev/sda -- mkpart ESP fat32 1MiB 512MiB
+# parted /dev/sda -- set 3 esp on
+</span></code></pre><h2 id="customizing-the-config">Customizing the config</h2>
+<p>I'm trying to get XMonad going alongside a few things similar to what <a href="https://github.com/gvolpe/nix-config"><code>gvolpe</code> is using out there</a>, will update this post as
+that progresses!</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/nix/">nix</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/nuc/">nuc</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

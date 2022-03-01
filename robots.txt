@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: https://tech.lfborjas.com/sitemap.xml

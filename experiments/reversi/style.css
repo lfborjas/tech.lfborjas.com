@@ -1,0 +1,26 @@
+body{
+    width: 700px;
+    margin: 0 auto;
+    font-family: "Trebuchet MS", Helvetica, arial, sans-serif;
+    color: #444;
+}
+
+a{
+    color: #2CB0B0;
+}
+
+#board{
+    width: 400px;
+    margin: 0 auto;
+}
+
+#feedback{
+    background-color: rgba(86, 192, 86, 0.6);
+    border: 1px solid #005300;
+    margin: 20px;
+}
+
+#pointer{
+    font-size: xx-large;
+    font-weight: bold;
+}

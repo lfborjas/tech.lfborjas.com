@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="es">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Hiperanarquía</title>
+
+		<meta name="description" content="Hipermedios, el diseño de la web y la naturaleza de los programadores">
+		<meta name="author" content="Luis Borjas">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+        <section>
+          <h1>Hiperanarquía</h1>
+          <h3>El diseño de la web vs el totalitarismo accidental</h3>
+          <p>Luis Borjas</p>
+        </section>
+
+        <section>
+          <h2>"Jumping the shark"</h2>
+          <img src="http://static.tvgcdn.net/MediaBin/Content/100830/News/Todays_News_Our_Take/5_fri/100903HappyDays1.jpg" alt="" />
+        </section>
+
+        <section>
+         <blockquote>
+           Una provisión ("affordance") es una cualidad de un objeto, o un ambiente,
+           que permite a un individuo realizar una acción
+         </blockquote>
+           <p>
+             <cite>James L. Gibson - "The ecological approach to visual perception"</cite>
+           </p>
+        </section>
+
+        <section>
+         <blockquote>
+           El valor de un objeto bien diseñado surge cuando presenta un conjunto tan rico
+           de provisiones que las personas que lo usan hacen cosas cuyo diseñador nunca imaginó
+         </blockquote>
+         <p>
+           <cite>Donald A. Norman - "The design of everyday things"</cite>
+         </p>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ## El diseño de las cosas comunes
+
+            * Las cosas con las cuales interactuamos requieren dos tipos de conocimientos: en el mundo y en la cabeza
+            * El conocimiento en la cabeza es conocimiento en el ambiente, internalizado
+            * "Intuición", "Usabilidad": boletos de avión, automóviles, sillas...
+          </script>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ## Las siete etapas de acción
+
+            * Formar la metas
+            * Formar la intención específica
+            * Determinar la acción
+            * Ejecutar la acción
+            * Percibir el __estado__ del sistema
+            * __Interpretar__ el estado del sistema
+            * Evaluar el resultado
+            * (repetir)
+          </script>
+        </section>
+
+        <section>
+          <h2>Máquinas de estado</h2>
+          <p>
+            Empezás en un "estado" y las provisiones te permiten moverte de ese a otros
+          </p>
+          <img src="http://i.imgur.com/9E28g.gif" alt="" />
+        </section>
+
+        <section>
+          <blockquote>
+            El único vínculo posible entre el mundo objetivo y el lingüístico está en la estructura
+            y sólo en la estructura
+          </blockquote>
+            <p>
+              <cite>Alfred Korzybski - "Science and Sanity"</cite>
+            </p>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ## El lenguaje como provisión
+
+            * Cuando hablás, hay conocimiento del mundo en tu cabeza: lo que el otro habla, lo que significa
+            * La comunicación es un __protocolo__ (sabés cómo va a funcionar), el lenguaje un __estándar__
+            * La información está en el mensaje ("el mapa no es el territorio")
+            * A veces tenés que re-definir los términos ("_Out of band information_") 
+            * e.g. Marx ("Kapital", "Grundrisse"), Deleuze & Guattari ("Capitalisme et Schizophrénie")
+          </script>
+        </section>
+
+        <section>
+        <blockquote>
+            La información se convierte en la provisión mediante la cual 
+            el usuario obtiene opciones y elige cursos de acción
+          </blockquote>
+          <p><cite>Roy Fielding</cite></p>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ## El diseño de la web
+
+            * ¿Cómo funciona la web?
+            * Las páginas web son los __mensajes__
+            * HTTP es el __protocolo__ (las máquinas saben cómo obtenerlas y comunicarse)
+            * MIME es el tipo de __medios__ (HTML es un medio que las máquinas saben cómo mostrar)
+          </script>
+        </section>
+
+        <section >
+          <section data-markdown>
+            <script type="text/template">
+              * Cliente-servidor: el cliente sabe interpretar mensajes, encontrar provisiones para sus acciones, tomarlas, mandarle un mensaje al servidor y recibir una respuesta
+              * En el inicio, el cliente tenía que saber cómo funcionaba el servidor. Ahora se confía en conocimiento en el mundo (e.g. URLs)
+              * Hipermedios: las __provisiones__ del tipo de medios
+            </script>
+          </section>
+
+          <section data-markdown>
+            <script type="text/template">
+              * HATEOAS: "Hypermedia as the engine of application state": las provisiones te permiten tomar decisiones de acción que cambian el estado percibido
+              * La web es un sistema descentralizado exitoso porque la autoridad y la responsabilidad están __distribuidas__
+              * En la web las provisiones son __vínculos__ entre __estados__: te movés de un lado a otro siguiéndolos
+            </script>
+          </section>
+        </section>
+
+        <section>
+          <blockquote>
+            La web es más una creación social que técnica [...] su fin último es mejorar nuestra existencia
+            conectada [...] desarrollamos confianza a través de millas y desconfianza a la vuelta de la esquina
+          </blockquote>
+          <p>
+            <cite> Tim Berners-Lee -- Weaving the Web </cite>
+          </p>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ## El problema de las "web APIs"
+
+            * Como programadores, a veces hacemos servicios que otros programadores usarán
+            * En vez de respetar el conocimiento en el mundo, los obligamos a internalizar más
+            * i.e. cómo funcionan nuestras aplicaciones específicas, nuestra propia idea del protocolo o de los medios
+            * ¿el problema? No damos provisiones, no usamos hipermedios
+            * Las aplicaciones móviles que diseñamos tienen ese problema: los clientes saben demasiado de los servidores
+          </script>
+        </section>
+
+        <section>
+        <section>
+        <h2> Una instancia de la patología </h2>
+        <p>Hacé una aplicación para iphone, mandame un mensaje para hacer login, luego mandame otro para obtener tus mensajes y otro a este otro lugar para contestar</p>
+          <pre>
+            <code>
+              /* POST /accounts/login */
+              {
+                "authentication_token": xyz42,
+                "account": {
+                    "name": "Zaphod Beeblebrox",
+                    "id": 42
+                }
+              }
+              /* PUT -d "name=ZAPHOD" /account/42 */
+                "account": {
+                    "name": "Zaphod Beeblebrox",
+                    "id": 42
+                }
+            </code>
+          </pre>
+        </section>
+          <section>
+          <ul>
+            <li>Las provisiones están fuera de banda</li>
+            <li>Si cambian las urls, ¿qué pasa?</li>
+            <li>JSON <strong>NO</strong> es un tipo de hipermedios ¿cómo ofrecer provisiones?</li>
+            <li>Estamos acostumbrados a intercambiar objetos, no estados</li>
+            <li>¿La causa? <em>el principio del mínimo esfuerzo</em>: internalizar conocimiento que le facilita la vida a otros es difícil, mejor que ellos aprendan</li>
+            <li><strong>Totalitarismo accidental</strong>: perdemos el propósito de la web al tener pereza de entender nuestros protocolos, estándares y medios</li>
+          </ul>
+          </section>
+        </section>
+
+        <section>
+          <section>
+          <h2>La solución: hipermedios</h2>
+          <p>Usando, por ejemplo el tipo de hipermedios <a href="http://stateless.co/hal_specification.html">HAL</a></p>
+          <pre style="height: 400px">
+          <code>
+/* GET http://api.zaphod.net/ */
+{
+  "_links": {
+    "http://api.zaphod.net/rels/login": {"href": "/accounts/login"},
+    "http://api.zaphod.net/rels/account": {"href": "/accounts/{id}", "templated": true}
+  }
+}
+/* POST message._links.login */
+{
+  "authentication_token": xyz42,
+  "_embedded": {
+    "account": {
+        {"_links": {"self": {"href": "/accounts/42"}}}
+        "name": "Zaphod Beeblebrox",
+        "id": 42
+    }
+  },
+  "_links": { "messages": "/accounts/42/messages" }
+}
+          </code>
+          </pre>
+          </section>
+        <section>
+          <ul>
+            <li>Definimos el tipo de medios ("HAL")</li>
+            <li>Definimos las "link relations" (rels)</li>
+            <li>Ahora nuestros mensajes tienen provisiones</li>
+          </ul>
+
+        </section>
+        </section>
+        <section data-markdown>
+          <script type="text/template">
+            ## Charlas más útiles (técnicas y en detalle)
+
+            * [The costs and benefits of building hypermedia APIS -- Mike Amundsen](http://www.infoq.com/presentations/Hypermedia-API-Node-js)
+            * [Such a rich set of affordances -- Mike Amundsen](www.youtube.com/watch?v=W7NRMhZ4MDk)
+            * [Hypermedia APIs -- Jon Moore](http://vimeo.com/20781278)
+            * [Everything you know about ReST is wrong -- Steve Klabnik](http://vimeo.com/30764565)
+            * [Designing Hypermedia APIs -- Steve Klabnik](http://www.everytalk.tv/talks/260-RailsConf-Designing-Hypermedia-APIs)
+          </script>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+              ## Libros y artículos
+
+              * [Building hypermedia APIs with node.js and html 5 -- Mike Amundsen](http://shop.oreilly.com/product/0636920020530.do)
+              * [Designing Hypermedia APIs -- Steve Klabnik](http://www.designinghypermediaapis.com/)
+              * [Architectural Styles and the Design of Network-based Software Architecture -- Roy Fielding](http://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm)
+              * [ReST APIs should be hypertext driven -- Roy Fielding](http://roy.gbiv.com/untangled/2008/rest-apis-must-be-hypertext-driven)
+              * [Clarifying ReST](kellabyte.com/2011/09/04/clarifying-rest)
+              * [A Hypermedia API reading list -- Steve Klabnik](http://blog.steveklabnik.com/posts/2012-02-27-hypermedia-api-reading-list)
+              * [Marx, Anarchism and web standards -- Steve Klabnik](http://blog.steveklabnik.com/posts/2011-12-15-marx-anarchism-and-web-standards)
+              * [Transmuting philosophy into machinery -- Steve Klabnik](http://blog.steveklabnik.com/posts/2012-03-08-transmuting-philosophy-into-machinery)
+              * [Anarchist morality -- Peter Kropotkin](http://www.marxists.org/reference/archive/kropotkin-peter/1897/morality.htm)
+          </script>
+        </section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: "simple", // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/showdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+					// { src: 'plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>

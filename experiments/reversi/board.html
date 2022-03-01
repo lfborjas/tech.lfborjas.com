@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8"0>
+        <title>Javascript reversi</title>
+        <link rel="stylesheet" href="style.css" type="text/css" media="screen" charset="utf-8"0>
+        <script src="jquery.js"></script>
+        <script src="raphael.js"></script>
+        <script src="game.js"></script>
+    </head>
+    <body>
+        <header>
+            <h1>Javascript Experiment 1: reversi</h1>
+            <a href="#" id="play-link">How to play</a>
+            <a href="#" id="about-link">About</a>
+        </header>
+        <div id="happy-text">
+            <div id="play">
+                <p>
+                    Reversi is a simple game: in your turn, you must put new pieces in the board
+                    but you can only put them in places that would <em>corner (or trap)</em> 
+                    your opponents pieces <strong>between</strong>
+                    the new piece and one or more of your the existing ones.
+                    . When you place a piece, every trapped piece
+                    of your opponent <em>flips</em> to your color.
+                    The player with most pieces in the end wins. 
+                </p>
+            </div>
+            <div id="about">
+                <p>
+                This is an experiment on javascript and html5: the board and pieces are drawn with 
+                svg (with the amazing <a href="http://raphaeljs.com/">Raphäel JS</a> library). 
+                The javascript code tries to use pragmatic idioms as well as merging
+                techniques of the object-oriented
+                and the functional paradigms in ways that would make a purist of either shriek. 
+                It's <strong>not</strong> intended as an example of good javascript (not even
+                of good programming) but as a little note to myself of things I've learned 
+                about javascript which made me love it like I love python, and hopefully
+                it will make you say "hey, that dude sucks at JS, I'm gonna learn it and code that game
+                much better!". You can view the source code of this very page 
+                (the script is called <code>game.js</code>) to fathom the sacrilege of the code, or you can 
+                check out the <a href="https://github.com/lfborjas/lfborjas.github.com/blob/master/experiments/reversi/game.js">github source</a>
+                if you're into that sort of thing.
+                </p>
+            </div>
+        </div>
+        <div id="feedback">
+            <strong>Turn: </strong>
+            <span id="white-prompt">White (<span id="white-counter">2</span>)</span>
+            <span id="pointer">&rarr;</span>
+            <span id="black-prompt"> Black (<span id="black-counter">2</span>)</span>
+            <label>
+                <input type="checkbox" id="show-hints"/>
+                Show hints
+            </label>
+        </div>
+        <div id="board"></div>
+      
+    </body>
+</html>

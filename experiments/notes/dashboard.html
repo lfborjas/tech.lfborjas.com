@@ -1,0 +1,94 @@
+<!DOCTYPE html> 
+<html> 
+  <head> 
+    <meta charset='utf-8' /> 
+    <link rel="stylesheet" href="http://yandex.st/highlightjs/5.16/styles/github.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.6/jquery-ui.min.js"></script>
+    <script src='modernizr-1.6.min.js'></script> 
+    <script src="showdown.js"></script>
+    <script src="http://yandex.st/highlightjs/5.16/highlight.min.js"></script>
+    <script src="jquery.elastic.js"></script>
+    <script src='client.js'></script> 
+    <style type="text/css" media="screen">
+       body{
+            font-family: Courier, monospace;
+            width: 1000px;
+            margin: 0 auto;
+            padding-top: 50px;
+            background: #DDD url(http://24ways.org/img/body.gif) repeat fixed 0px 0px;
+        }
+        em{
+            background-color: #FFF666;
+        }
+
+        a{
+            color: #06F;
+            text-decoration: none;
+        }
+        #workstation{
+            float: left;
+            background-color: rgba(255, 255, 255, 0.746094);
+            border: 1px dotted;
+            width: 45%;
+            min-height: 450px;
+        }
+        #edition{
+            padding-left: 10px;
+        }
+        #history{
+            float: right;
+            width: 45%;
+        }
+
+        .date{
+            font-size: 0.7em;
+            color: gray;
+        }
+
+        #gists{
+            list-style-type: none;
+        }
+
+        .gist:hover {
+            background-color: #FFF666; 
+            cursor: pointer;
+        }
+
+        .error{
+            color: red;
+        }
+
+    </style>
+    <title>JSNotes</title> 
+  </head> 
+  <body>
+      <div id="workstation">
+          <form id="edition" action="/gists/create">
+              <h2>Adding note</h2>
+              <p>
+              <input type="text" name="title" placeholder="Add a title"0>
+              </p><p>
+              <input type="text" name="categories" placeholder="Comma-separated categories"0>
+              </p><p>
+              <textarea name="content" rows="8" cols="40"></textarea>
+              </p>
+              <p>
+              <input type="submit" value="Add"0>
+              </p>
+          </form>
+          <div id="display">
+              <a href="/gists/new" id="add">Add new note</a>
+              <div id="note"></div>
+          </div>
+      </div>
+      <div id="history">
+          <h2 id="prompt">All notes</h2>
+          <select id="categories">
+              <option>All</option>
+          </select>
+          <ul id="gists"></div>
+      </div>
+        
+  </body> 
+</html> 

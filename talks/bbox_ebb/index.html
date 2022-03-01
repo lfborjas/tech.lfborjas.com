@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Metamagical Clojure</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(http://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(http://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; font-size: 20px; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+# Metamagical Parens
+
+---
+
+Let's think about the foundations of computation in a way that doesn't look too much like a computer language.
+
+---
+
+# A note: expressions
+
+* An expression is either a _symbol_ 
+    - `true, false, a, symbol! `
+* Or a list
+    - `(a b c)`
+    - `(a (b c) 1)`
+    - `[x y z]` 
+* Every expression _expresses_ a value:
+    - If it's a symbol, it just expresses itself
+    - If it's a list, we'll see it as:
+        * (operation operand<sub>1</sub> operand<sub>2</sub> operand<sub>3</sub> …)
+        * Its value is the result of _applying_ the value of the operation to the values of the operands (e.g. `(+ (+ 1 2) 3)`, `(+ (* 2 3) (/ 10 2))`). Think _Polish_ (or prefix) notation.
+        
+---
+
+# Part 1: Primitives/Axioms
+
+We need to define some things by themselves, let's call them _axioms_ or _primitives_. In the real world these would perhaps be part of the instruction set for the machine, or implemented in a lower level language, or just mathematical concepts we take for granted.
+
+---
+
+# The "Quote" operation
+
+Returns its sole operand (abbreviated as `'arg`)
+
+    (quote a)
+    ;=> a
+    (quote (a b c))
+    ;=> a b c
+    'a
+    ;=> a
+
+for our purposes, a list with square brackets (`[a b c]`) can be considered a quoted list.
+
+---
+    
+# The "coll?" operation
+
+Asks its operand if it's a list
+
+    (coll? 'a)
+    ;=> false
+    (coll? '(1 2 3))
+    ;=> true
+    
+note that we are _quoting_ the operands to protect them from evaluation
+
+    (coll? (coll? '(1 2 3)))
+    ;=> ???
+    (coll? '(coll? '(1 2 3)))
+    
+---
+    
+# The "=" operation
+
+tests for equality of its operands
+
+    (= 'a 'a)
+    ;=> true
+    
+---
+
+# The "first" operation
+
+gets just the first element (_head_) of the collection
+
+    (first '(a b c))
+    ;=> a
+    (first '((a b) c d))
+    ;=> (a b)
+   
+---
+
+# The "rest" operation
+
+gets a list with everything but the first element (the _tail_)
+
+    (rest '(a b c))
+    ;=> (b c)
+    (rest '((a b) c d))
+    ;=> (c d)
+
+---
+
+# A shortcut notation
+
+    (frest '(a b c))
+    ;=> (first (rest '(a b c)))
+    (rrest [x y z])
+    ;=> (rest (rest l))
+    (frrfirst l)
+    ;=> (first (rest (rest (first l))))
+    ...
+
+---
+
+# The "cons" operation
+
+takes an expression and a list; puts the expression in the head position of the list
+
+    (cons 'a '(b c d))
+    ; => (a b c d)
+    (cons 'a (cons 'b (cons 'c '())))
+    ;=> (a b c)
+    
+
+---
+
+#Another shortcut
+
+`list` builds lists given the elements as operands, it's really just lots of cons:
+
+    (list 'a 'b 'c)
+    ;=> (cons 'a (cons 'b (cons 'c '())))
+
+---
+
+# cond
+
+takes an even list, where the odd operands are expressions as _truth tests_ and the even operands are expressions _consequences_: (cond t<sub>0</sub> c<sub>0</sub> t<sub>1</sub> c<sub>1</sub>)
+
+It _evaluates_ each test in order and, if one is true, the value of expression will be the value of that test's consequence:
+
+    
+    (cond 
+        (coll? '(1 2)) 'list
+        true            'atom)
+    ;=> 'list
+    
+---
+
+# Part 2: Functions
+
+---
+
+#Expressing a function
+
+We _define_ a function with the _fn_ operation (known as `lambda` traditionally). Takes a list of parameters and an expression.
+
+<span style="font-size: xx-large">
+(fn (p<sub>0</sub> p<sub>1</sub> … p<sub>n</sub>) exp)
+<br />
+or, if you want to be fancy and mathematical:
+<br />
+(&lambda; (p<sub>0</sub> p<sub>1</sub> … p<sub>n</sub>) exp)
+</span>
+
+Where each `p` is a _parameter_.
+
+We _invoke_ (or call) a function taking its definition and giving it some actual values to work with.
+
+<span style="font-size: xx-large">
+
+((&lambda; (p<sub>0</sub> p<sub>1</sub> … p<sub>n</sub>) exp) a<sub>0</sub> a<sub>1</sub> … a<sub>n</sub> )
+</span>
+
+Where each `a` is known as _argument_. There should be as many _arguments_ as there are _parameters_. The arguments are the invocation's particular values for the parameters, and they will be used to evaluate the expression we send to the definition.
+
+---
+
+#Applying functions
+
+To apply a function:
+
+* We "pair-up" each parameter to the value of each argument
+* Use those values in the body of the function
+
+Example
+
+    ((fn (x) (cons x '(b))) 'a)
+    ;=> (a b)
+    ((fn (x y) (cons x (rest y))) 'z '(a b c))
+    ;=> ???
+    ((fn (f) (f '(b c))) (fn (x) (cons 'a x)))
+    ;=> ???
+
+---
+
+#Defining
+
+The above could be called "anonymous" functions, because to apply them we have to carry around the definitions themselves. To make things easier, let's introduce the concept of "defining".
+
+    (def x 3) ; define x to symbolize 3
+    (def last
+        (fn (l)
+            (cond 
+              (= (rest l) '()) (first l)
+              true             (last (rest l)))))
+     (last '(a b c)) ;=> ???
+     
+
+As can be expected, a very common use case is to define a function for later use. So let's come up with a shorthand for that. Lambda is sexy but `fn` is clearer. And to define an `fn` can be called `defn`:
+    
+    (defn _last [l]
+        (cond (= (rest l) '()) (first l)
+              true (_last (rest l))))
+              
+And just like that, we have recursion too! -- we'll revisit that, no worries!
+
+---
+
+#Part 3: playing with functions
+
+---
+
+#Guess what each of the following does
+
+---
+
+```clojure
+(defn _and [a b]
+  (cond a    (cond b true true false)
+        true false))
+
+
+(defn _or [a b]
+  (cond a true
+        b true
+        true false))
+        
+  (defn _not [e]
+  (cond e false true true))
+```
+
+---
+
+```clojure
+(defn _empty? [l]
+  (_or (= l []) (= l '())))
+
+(defn append [x y]
+  (cond (_empty? x) y
+    true (cons (first x) (append (rest x) y))))
+```
+
+---
+
+```clojure
+(defn pair-up [x y]
+  (cond (_and (_empty? x) (_empty? y)) '()
+        (_and (coll? x) (coll? y)) 
+          (cons (cons (first x) (cons (first y) '()))
+                (pair-up (rest x) (rest y)))))
+
+(defn lookup [sym env]
+  (cond (empty? env) false
+        (= (ffirst env) sym) (frfirst env)
+        true (lookup sym (rest env))))
+```
+
+---
+
+#Part &lambda;
+
+---
+
+```clojure
+(defn eval [exp env]
+    (cond 
+      (_not (coll? exp)) (lookup exp env)
+      (= (first exp) 'quote) (frest exp)
+      (= (first exp) 'coll?) (coll? (eval (frest exp) env))
+      (= (first exp) '=) (= (eval (frest exp) env)
+                            (eval (frrest exp) env))
+      (= (first exp) 'first) (first (eval (frest exp) env))
+      (= (first exp) 'rest)  (rest  (eval (frest exp) env))
+      (= (first exp) 'cons)  (cons  (eval (frest exp) env)
+                                    (eval (frrest exp) env))
+      (= (first exp) 'cond)  (evcond (rest exp) env)
+      (= (first exp) 'fn)  (list 'closure (rest exp) env)
+      true (_apply (eval  (first exp) env)
+                    (evlist (rest  exp) env))))
+                    
+```
+
+---
+
+```clojure
+(defn _apply [proc args]
+  (cond
+    (= (first proc) 'closure) 
+      (eval 
+        ;body of the procedure
+        (frfrest proc)
+        ;build a new environment:
+        (append 
+          ;map the formal arguments to the parameters
+          (pair-up (ffrest proc) args)
+          ;the environment that this proc was closed upon
+          (frrest proc)))
+    true 'unrecognized-expression))
+```
+
+---
+
+```clojure
+(defn evcond [clauses env]
+  (cond 
+    (eval (first clauses) env)
+      (eval (frest clauses) env)
+    true (evcond (rrest clauses) env)))
+
+(defn evlist [m env]
+  (cond 
+    (_empty? m) '()
+    true (cons (eval (first m) env)
+                (evlist (rest m) env))))
+```
+
+---
+    
+#Let's try to make sense of this
+
+    (eval 'x '((x a) (y b)))
+    ???
+    (eval '(= 'a 'a) '())
+    true
+    (eval '(cons x '(b c)) '((x a)))
+    ???
+    
+The first cases handle the _primitive_ procedures.
+
+The second argument, now we realize, is the __environment__ in which the expression is evaluated; _here_ is where we "remember" things. 
+    
+    (eval '(cond (coll? x) 'list true 'atom) '((x '(a b))))
+    ;=> ???
+    (eval '(f '(b c)) '((f (fn (x) (cons 'a x)))))
+    ;=> ???
+    (eval '((fn (x) (coll? x)) '(1 2)) '((2 true)))
+    ;=> ???
+    
+
+---
+
+# Taking another look
+
+* `eval` is just a conditional block.
+* The first clause handles atoms: looks them up in the environment.
+* The second clause, for `quote`, simply returns its argument without evaluating.
+* The next five clauses, for `coll?, =, first, rest` and `cons` call those functions after evaluating the arguments.
+* The clause for `cond` calls an auxiliary function, `evcond`, that goes through all pairs of conditions evaluating the predicates, and returns one of the associated expressions.
+* The clause for `fn` returns a "closure", which is simply a list that has an expression and an environment with values for each variable (or "label") in the expression.
+* The default clause assumes that the first element is a function, and "applies" expression with the values of its arguments fully evaluated, by the `evlist` auxiliary function.
+* The auxiliary function `apply` discards the `closure` label, only useful to identify such a construct, and takes the actual expression and evaluates it building a new environment with the results. This can take a long time!
+
+---
+
+# A full evaluation
+
+```clojure
+(eval ( (fn [x] (_not x)) false ) 
+        ((true true) (false false) 
+         (_not (fn [e] (cond e false true true)))))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (evlist (false) ((true true) (false false) (_not ...))))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (cond (_empty? (false) '()) 
+        true (cons (eval false ((true true) (false false) (_not ...))) 
+                   (evlist () ((true true) (false false) (_not ...))) )))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (cond (_empty? (false) '()) 
+         true (cons 
+                (eval false ((true true) (false false) (_not ...))) 
+                '() )))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (cond (_empty? (false) '()) true (cons false '() )))
+(_apply (eval (fn [x] (_not x)) ((true true) (false false) (_not ...)))
+        (false))
+(_apply ('closure ([x] (_not x)) ((true true) (false false) (_not ...)))
+        (false))
+
+```
+
+---
+
+```clojure
+(_apply (eval (_not x) 
+              (append 
+                (pair-up x (false)) 
+                ((true true) (false false) (_not ...)))
+        (false)))
+(eval (_not x) 
+      (append 
+       (pair-up x (false)) ((true true) (false false) (_not ...))))
+(eval (_not x) 
+      ((x false) 
+      (true true) (false false) 
+      (_not (fn [e] (cond e false true true)))))
+(eval ( 
+        (fn [e] (cond e false true true) false) 
+        ((x false) (true true) (false false) (_not ...))))
+;and we start all over again, until we get 'true
+```
+
+---
+
+# The takeaways
+
+* We can create very thorough models of a domain within very narrow limitations.
+* We can concoct a model of computation powerful enough to describe algorithms, but simple enough to hold in one's head.
+* A consistent abstraction goes a long way.
+* An academic fun bit that could perhaps inform DSLs and such: homoiconicity, _the data being the code (or the syntax tree)_.
+
+---
+
+#Further reading
+
+* [The original McCarthy paper](http://www-formal.stanford.edu/jmc/recursive.html)
+* [The paul graham digest](http://www.paulgraham.com/rootsoflisp.html)
+* [The SICP lecture](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-001-structure-and-interpretation-of-computer-programs-spring-2005/video-lectures/7a-metacircular-evaluator-part-1/)
+* [The SICP chapter](http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-25.html#%_chap_4)
+* [A spanish version of this lecture](http://tech.lfborjas.com/minimalisp)
+* [My implementation in clojure](https://github.com/lfborjas/minimalisp/tree/clojure)
+* [An implementation in python with side effects and sequential evaluation](http://norvig.com/lispy.html)
+
+    </textarea>
+    <script src="remark.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>

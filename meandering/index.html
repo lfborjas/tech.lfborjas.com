@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Meandering through JSON with Optics</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>11 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2022-02-12
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>When working with third-party services, one is more likely than not to end up parsing
+a JSON document. For well-behaved APIs, documentation and examples are available, so the job
+usually becomes some minor variation of:</p>
+<ol>
+<li>Reach for the &quot;canonical&quot; JSON parsing library in your language</li>
+<li>Grab some example JSON and do some ad-hoc parsing of the bits you're interested in,</li>
+<li>Maybe write a class/type/module/namespace to immortalize adapting said JSON data to your domain, hopefully with accompanying tests.</li>
+<li>Think everything is okay, until some live data comes in with missing keys (or extra keys!) inconsistent types (nulls where they promised they wouldn't show up, invalid date
+formats, etc.)</li>
+<li>Go back to step 2 with the newfound edge cases, adapt.</li>
+</ol>
+<p>Sometimes it's a quick process: couple of caveats you missed in the documentation, sometimes
+it's painstaking; the ability to close the loop in a fast, but robust, manner becomes invaluable: you don't want to spend days, and a lot of boilerplate, only to discover that some deep details didn't really work out. I believe a good type system and a good parser help a lot, but the last mile is all about the &quot;getting to the bits of data relevant to your domain.&quot; Optics are my tool of choice for that.</p>
+<span id="continue-reading"></span>
+<p>As a fun example, we're going to be parsing a response from my <a href="http://www.lfborjas.com/astral-arcanum-demo/">Astral Arcanum</a> API (which is technically a GraphQL API, so a more appropriate route would be to use something like <a href="https://morpheusgraphql.com/client"><code>morpheus</code></a>.) But, it's an easy to understand API with responses that can get deeply nested, so we'll roll with it.</p>
+<p>I'll include snippets of code relevant to the discussion, but you can take a peek
+at <a href="https://github.com/lfborjas/json-optics-playground/blob/f689fcb007fca82e317bdd2536edb0c2fceaab8c/src/JsonOpticsPractice/Horoscope.hs">the full module on Github</a>.</p>
+<h1 id="parsing-json">Parsing JSON</h1>
+<p>The canonical library here is of course <a href="https://hackage.haskell.org/package/aeson-1.5.6.0"><code>aeson</code></a>. And a straightforward approach is to define a record that corresponds to each object in the JSON structure, for example, for the &quot;planet position&quot; in the JSON:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#f8f8f2;">  {
+    </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">planet</span><span style="color:#eeeeee;">&quot;</span><span style="color:#f8f8f2;">: </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">Sun</span><span style="color:#eeeeee;">&quot;</span><span style="color:#f8f8f2;">,
+    </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">speed</span><span style="color:#eeeeee;">&quot;</span><span style="color:#f8f8f2;">: {
+      </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">unSplit</span><span style="color:#eeeeee;">&quot;</span><span style="color:#f8f8f2;">: </span><span style="color:#bd93f9;">1.0196359986110741
+    </span><span style="color:#f8f8f2;">},
+    </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">longitude</span><span style="color:#eeeeee;">&quot;</span><span style="color:#f8f8f2;">: {
+      </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">zodiacSign</span><span style="color:#eeeeee;">&quot;</span><span style="color:#f8f8f2;">: </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">Capricorn</span><span style="color:#eeeeee;">&quot;
+    </span><span style="color:#f8f8f2;">},
+    </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">houseNumber</span><span style="color:#eeeeee;">&quot;</span><span style="color:#f8f8f2;">: {
+      </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">label</span><span style="color:#eeeeee;">&quot;</span><span style="color:#f8f8f2;">: </span><span style="color:#eeeeee;">&quot;</span><span style="color:#f1fa8c;">IC</span><span style="color:#eeeeee;">&quot;
+    </span><span style="color:#f8f8f2;">}
+  }
+</span></code></pre>
+<p>We have a pretty 1-to-1 Haskell type:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">PlanetPosition </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">PlanetPosition
+</span><span style="color:#f8f8f2;">  { planet </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">Planet
+  </span><span style="color:#f8f8f2;">, speed </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">SpeedData
+  </span><span style="color:#f8f8f2;">, longitude </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">LongitudeData
+  </span><span style="color:#f8f8f2;">, houseNumber </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">HouseData
+</span><span style="color:#f8f8f2;">  }
+  </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> (</span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Show</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Generic</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">FromJSON</span><span style="color:#f8f8f2;">)
+</span></code></pre>
+<p>Where <code>speed</code>, <code>longitude</code> and <code>houseNumber</code> have their respective types, too.</p>
+<h2 id="deriving-fromjson">Deriving FromJSON</h2>
+<p>Aeson <a href="https://hackage.haskell.org/package/aeson-1.5.6.0/docs/Data-Aeson.html#t:FromJSON">lists a few options</a> for writing <code>FromJSON</code> instances:</p>
+<ul>
+<li>Manually, with some help from <code>withObject</code> to implement the <code>parseJSON</code> method. This option is useful if the JSON is truly a pain to cleanly map to Haskell types and one would rather do some &quot;massaging&quot; of the data before constructing a Haskell value. Note that there's also <a href="https://hackage.haskell.org/package/aeson-1.5.6.0/docs/Data-Aeson.html#v:genericParseJSON"><code>genericParseJSON</code></a> if the &quot;manual&quot; part is something rather uniform that can be addressed by tweaking the default options, e.g., dropping a prefix or transforming the casing of the keys.</li>
+<li><a href="https://hackage.haskell.org/package/aeson-1.5.6.0/docs/Data-Aeson-TH.html">Using Template Haskell</a>. Which, at the time of writing, is said to &quot;probably be more efficient than [generics].) The <code>TemplateHaskell</code> pragma is required in this case.</li>
+<li>Lastly, if one's type truly needs no massaging, the default implementation works if
+the type derives <code>Generic</code> -- you can either provide an explicitly empty instance (i.e. <code>instance FromJSON PlanetPosition</code>,) to accept the default method implementations, or add
+the <code>DeriveAnyClass</code> pragma to be able to do as I did in the example above and list it alongside other derive-able classes. Optionally, <code>DerivingStrategies</code> can be a nice way
+to explicitly indicate that one wants the <a href="https://kowainik.github.io/posts/deriving#any-class-derivations"><code>derive anyclass</code> strategy to apply.</a></li>
+</ul>
+<p>For truly big APIs, <a href="https://github.com/lfborjas/orpheus/blob/3c37229564a672e445d90b5d1d0b5e62f79454a3/backend/src/Vision.hs">I have indeed gone the Template Haskell route</a>, which allows for some customization that makes it place nicely with <code>Lens</code> conventions.</p>
+<p>When dealing with less-than-pretty third party services, I usually write manual instances with either <code>genericParseJSON</code> or the more bespoke
+<code>withObject</code> &quot;massaging&quot; route. Sometimes even <a href="https://github.com/lfborjas/freenatalchart.xyz/blob/8822f9e27ff685c629d39bbf8e14eddb40d7e77d/src/ExternalServices/Geonames.hs#L64-L82">going as low-level as writing parsers</a> for truly wild APIs. </p>
+<p>For smaller or more well-behaved JSON, <a href="https://github.com/lfborjas/senex/blob/d8e917bedf2b97084f01913914fe7786be108186/src/Geo.hs">I've gone for the empty instance + <code>Generic</code> route</a>, mostly because <a href="https://github.com/lfborjas/orpheus/blob/3c37229564a672e445d90b5d1d0b5e62f79454a3/backend/src/Api.hs#L37-L42">I ran into a <em>runtime</em> issue</a> I couldn't explain (or find answers for!) at the time with the <code>DeriveAnyClass</code> strategy. I only learned right now that the Template Haskell route may prove to be more efficient, so I'd probably go with that in a larger codebase. </p>
+<p>For this example, it looks quite neat to
+be able to just throw <code>ToJSON</code> in there alongside other classes we're <code>deriving</code> without any additional instantiating incantations -- though
+I could easily be convinced to list the deriving strategy explicitly for extra maintenance clarity! And I was glad to see that whatever error I ran into before is not a problem in newer versions of Aeson (or maybe GHC itself? I truly wish I'd found why my old instance went awry!)</p>
+<p>Hopefully you see from the above examples (and the excellent Aeson documentation,) that a lot of &quot;ugly&quot; JSON can be dealt with right <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/">at the parsing stage</a>, so your types don't become unergonomic -- or worse, values or &quot;shapes&quot; that should've been dealt with at the parsing stage end up infecting your business logic (e.g. not parsing a date value, letting it into your domain logic as a string, and then having to parse it deep in some handler or background task!)</p>
+<p>As an example of handling things as the right type at the right moment -- parsing -- a <a href="https://github.com/lfborjas/json-optics-playground/commit/885b5f4f0d8d6e30418ab1fb73526aed3a9a13e8">previous version</a> of this code treated <code>Planet</code> values as Strings. But as soon as the business logic needs to start dealing with the concept of a <code>Planet</code>, having transacted
+them as strings becomes a liability. We can do better, and promote them to a real domain type with <code>FromJSON</code> instance that leverages the <code>Read</code> instance:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">Planet
+  </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Sun
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Moon
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Mercury
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Venus
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Mars
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Jupiter
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Saturn
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Uranus
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Neptune
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Pluto
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">MeanNode
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">TrueNode
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">MeanApog
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">OscuApog
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Earth
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Chiron
+  </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> (</span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Show</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Read</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">FromJSON Planet </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  parseJSON </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> withText </span><span style="color:#f1fa8c;">&quot;Planet&quot; </span><span style="color:#ff79c6;">$ \</span><span style="color:#f8f8f2;">s </span><span style="color:#ff79c6;">-&gt; 
+    case</span><span style="color:#f8f8f2;"> readMaybe (</span><span style="color:#bd93f9;">T</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">unpack s) </span><span style="color:#ff79c6;">of
+      </span><span style="color:#bd93f9;">Nothing </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> fail </span><span style="color:#f1fa8c;">&quot;Invalid Planet&quot;
+      </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> p </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> pure p
+</span></code></pre>
+<p>Also, while developing, I like to run functions with some example data, and the quasi-quoting module that <a href="https://hackage.haskell.org/package/aeson-2.0.3.0/docs/Data-Aeson-QQ-Simple.html">ships with Aeson</a> proved useful in <a href="https://github.com/lfborjas/json-optics-playground/blob/f689fcb007fca82e317bdd2536edb0c2fceaab8c/src/JsonOpticsPractice/Horoscope.hs#L125">keeping a little example
+payload around</a> to send to my functions without having to wrangle Strings.</p>
+<h1 id="optics">Optics</h1>
+<h2 id="to-wrangle-data">To wrangle data</h2>
+<p>As I've <a href="/optics/">said before</a>, being able to compose optics as ways of dealing with data
+in a certain way, allows for great reusability and flexibility; dealing with deeply
+nested data has always been touted as The Big Thing, and it definitely applies here.</p>
+<p>One thing I <em>don't</em> like in standard <code>Lens</code> practice, is having to define my records with an underscore prefix so the generated optics get the &quot;real&quot; names. Fortunately, the <code>optics</code> package is able to <a href="https://hackage.haskell.org/package/optics-core-0.4/docs/Optics-Label.html">generically produce optics that use <code>OverloadedLabels</code></a>, and since I was already using generics in this example, adding the <code>OverloadedLabels</code> pragma to get optics that are easier to distinguish from regular accessor functions seemed like a win! (You'll note that the <code>optics</code> documentation <em>also</em> suggests TemplateHaskell over the Generic instance for larger codebases.) This route also has the felicitous side-effect of making
+records easier to work with. If you're not familiar with <code>optics</code>, the following examples show a few types and interesting functions/combinators, and the fact that composing
+optics is done via the <code>%</code> operator, not <code>.</code> -- which is <a href="https://hackage.haskell.org/package/optics-0.4/docs/Optics.html#g:4">by design</a>.</p>
+<p>For example, we may often be filtering positions by zodiac sign, so we can come up with an optic that abstracts that:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">inSign </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">String </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Optic</span><span style="color:#f8f8f2;">&#39; </span><span style="font-style:italic;color:#8be9fd;">A_Fold</span><span style="color:#f8f8f2;"> &#39;[</span><span style="color:#6be5fd;">()</span><span style="color:#f8f8f2;">] (</span><span style="font-style:italic;color:#8be9fd;">Maybe Horoscope</span><span style="color:#f8f8f2;">) </span><span style="font-style:italic;color:#8be9fd;">PlanetPosition
+</span><span style="color:#f8f8f2;">inSign signName </span><span style="color:#ff79c6;">= 
+</span><span style="color:#f8f8f2;">  _Just 
+  </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> #planetPositions
+  </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> folded 
+  </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> filteredBy (#longitude </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> #zodiacSign </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> only signName)
+</span></code></pre>
+<p>And use it in, e.g., a function that finds the house of each planet in a sign:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- &gt;&gt;&gt; runReader withHouse dataDecoded
+-- [(Sun,&quot;IC&quot;),(Moon,&quot;III&quot;),(Saturn,&quot;III&quot;),(Uranus,&quot;III&quot;),(Neptune,&quot;III&quot;)]
+</span><span style="color:#50fa7b;">withHouse </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Reader</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe Horoscope</span><span style="color:#f8f8f2;">) [(</span><span style="font-style:italic;color:#8be9fd;">Planet</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">String</span><span style="color:#f8f8f2;">)]
+withHouse </span><span style="color:#ff79c6;">= do
+</span><span style="color:#f8f8f2;">  magnifyMany (inSign </span><span style="color:#f1fa8c;">&quot;Capricorn&quot;</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">$ do
+</span><span style="color:#f8f8f2;">    pl </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> gview #planet
+    magnify #houseNumber </span><span style="color:#ff79c6;">$ do
+</span><span style="color:#f8f8f2;">      lbl </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> gview #label
+      return [(pl, lbl)]
+</span></code></pre>
+<p>Or, in a less contrived example, we can locally reuse an optic to both modify a datum
+and obtain it:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">setRetrograde </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">SpeedData </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">SpeedData
+</span><span style="color:#f8f8f2;">setRetrograde d@</span><span style="color:#bd93f9;">SpeedData</span><span style="color:#f8f8f2;">{unSplit} </span><span style="color:#ff79c6;">=
+  if</span><span style="color:#f8f8f2;"> unSplit </span><span style="color:#ff79c6;">&gt; </span><span style="color:#bd93f9;">0 </span><span style="color:#ff79c6;">then</span><span style="color:#f8f8f2;"> d{unSplit </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> negate unSplit} </span><span style="color:#ff79c6;">else</span><span style="color:#f8f8f2;"> d
+
+</span><span style="color:#6272a4;">-- &gt;&gt;&gt; madeRetrograde2
+-- [-1.0196359986110741,-13.947422051450813,-1.1903897069829164,-1.251451014550458,-0.5273338733007417,-4.477182214727865e-2,-0.11711016716347317,-5.89714837583241e-2,-3.7757418150684646e-2,-2.328425047258476e-2,-5.2901520421361925e-2,-0.11093337702602891,-6.345430815724024e-2]
+</span><span style="color:#50fa7b;">madeRetrograde2 </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> [</span><span style="font-style:italic;color:#8be9fd;">Double</span><span style="color:#f8f8f2;">]
+madeRetrograde2 </span><span style="color:#ff79c6;">= 
+</span><span style="color:#f8f8f2;">  dataDecoded 
+  &amp; speedOpt </span><span style="color:#ff79c6;">%~</span><span style="color:#f8f8f2;"> setRetrograde
+  &amp; toListOf (speedOpt </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> #unSplit)
+  </span><span style="color:#ff79c6;">where
+    </span><span style="color:#50fa7b;">speedOpt </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Traversal</span><span style="color:#f8f8f2;">&#39; (</span><span style="font-style:italic;color:#8be9fd;">Maybe Horoscope</span><span style="color:#f8f8f2;">) </span><span style="font-style:italic;color:#8be9fd;">SpeedData
+</span><span style="color:#f8f8f2;">    speedOpt </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _Just </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> #planetPositions </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> traversed </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> #speed
+</span></code></pre>
+<p>(N.B. <code>setRetrograde</code> itself could be written using optics... but I still maintain
+that whenever there's a straightforward &quot;normal&quot; way to write something, the cognitive burden
+that optics introduce for maintainers is probably not worth it.)</p>
+<p>Above, you'll have noticed uses of optics provided by the <a href="https://hackage.haskell.org/package/optics-extra-0.4/docs/Optics-Zoom.html"><code>Zoom</code></a> module. It makes it
+extremely convenient to work with optics in a more &quot;imperative&quot; manner without
+having to be writing long one-liners all the time, or when having to focus on
+more than one datum on each &quot;step.&quot; For example, here's it put to use to find all
+planets in each house: </p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- &gt;&gt;&gt; runReader groupedInHouses dataDecoded
+-- AccumMap (fromList [(&quot;Desc&quot;,[Mars]),(&quot;IC&quot;,[Sun,Mercury]),(&quot;II&quot;,[Pluto]),(&quot;III&quot;,[Moon,Venus,Saturn,Uranus,Neptune]),(&quot;IX&quot;,[Chiron]),(&quot;V&quot;,[MeanNode]),(&quot;VIII&quot;,[Jupiter]),(&quot;XII&quot;,[OscuApog])])
+</span><span style="color:#50fa7b;">groupedInHouses </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Reader</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe Horoscope</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">AccumMap String</span><span style="color:#f8f8f2;"> [</span><span style="font-style:italic;color:#8be9fd;">Planet</span><span style="color:#f8f8f2;">])
+groupedInHouses </span><span style="color:#ff79c6;">= do
+</span><span style="color:#f8f8f2;">  magnifyMany (_Just </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> #planetPositions </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> folded) </span><span style="color:#ff79c6;">$ do
+</span><span style="color:#f8f8f2;">    houseLbl </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> gview (#houseNumber </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> #label)
+    pl </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> gview #planet
+    pure </span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">AccumMap </span><span style="color:#ff79c6;">$ </span><span style="color:#bd93f9;">M</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">fromList [(houseLbl, [pl])]
+</span></code></pre>
+<p>Each value &quot;observed&quot; by <code>magnifyMany</code> is monoidally appended to the resulting value, which
+uses this little &quot;accumulating map&quot; I wrote, that mimicks python's <a href="https://docs.python.org/3/library/collections.html#collections.defaultdict"><code>defaultdict</code></a>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">newtype </span><span style="color:#bd93f9;">AccumMap</span><span style="color:#f8f8f2;"> k v </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">AccumMap</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">M</span><span style="color:#ff79c6;">.</span><span style="color:#bd93f9;">Map</span><span style="color:#f8f8f2;"> k v)
+  </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> (</span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Show</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#ff79c6;">instance</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Ord </span><span style="color:#ffffff;">k</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">Monoid </span><span style="color:#ffffff;">v</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">Semigroup</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">AccumMap </span><span style="color:#ffffff;">k v</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">where
+  </span><span style="color:#bd93f9;">AccumMap</span><span style="color:#f8f8f2;"> a </span><span style="color:#ff79c6;">&lt;&gt; </span><span style="color:#bd93f9;">AccumMap</span><span style="color:#f8f8f2;"> b </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">AccumMap </span><span style="color:#ff79c6;">$ </span><span style="color:#bd93f9;">M</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">unionWith </span><span style="color:#50fa7b;">(&lt;&gt;)</span><span style="color:#f8f8f2;"> a b
+  
+</span><span style="color:#ff79c6;">instance</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Ord </span><span style="color:#ffffff;">k</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">Monoid </span><span style="color:#ffffff;">v</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">Monoid</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">AccumMap </span><span style="color:#ffffff;">k v</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  mempty </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">AccumMap</span><span style="color:#f8f8f2;"> mempty
+</span></code></pre>
+<p>The Zoom module also gives us optic utilities for the <code>State</code> monad, like this more monadic version of <code>makeRetrograde</code>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">makeRetrograde </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">State</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe Horoscope</span><span style="color:#f8f8f2;">) </span><span style="color:#6be5fd;">()
+</span><span style="color:#f8f8f2;">makeRetrograde </span><span style="color:#ff79c6;">= do
+</span><span style="color:#f8f8f2;">  zoomMany (_Just </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> #planetPositions </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> traversed) </span><span style="color:#ff79c6;">$ do
+</span><span style="color:#f8f8f2;">    modifying #speed setRetrograde
+</span></code></pre><h2 id="to-aid-with-parsing">To aid with parsing</h2>
+<p>One surprising application of optics in this example module is that it can also help in the parsing stage: the payload only gets interesting within the <code>data.horoscope</code> path in the payload, and it seemed silly to write a <code>Response</code> type with only one field (<code>data</code>,) that could only be of type <code>Horoscope</code>, so I used the instances from the <a href="https://hackage.haskell.org/package/aeson-optics-1.1.1/docs/Data-Aeson-Optics.html"><code>aeson-optics</code></a> package to aid with that:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">dataDecoded </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Maybe Horoscope
+</span><span style="color:#f8f8f2;">dataDecoded </span><span style="color:#ff79c6;">=
+  </span><span style="color:#6272a4;">-- using the `Ixed Value` instance from aeson-optics.
+  -- note that `key` also works!
+</span><span style="color:#f8f8f2;">  fromJSONValue </span><span style="color:#ff79c6;">=&lt;&lt;</span><span style="color:#f8f8f2;"> (testData ^</span><span style="color:#ff79c6;">?</span><span style="color:#f8f8f2;"> ix </span><span style="color:#f1fa8c;">&quot;data&quot; </span><span style="color:#ff79c6;">%</span><span style="color:#f8f8f2;"> ix </span><span style="color:#f1fa8c;">&quot;horoscope&quot;</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    fromJSONValue </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> parseMaybe parseJSON
+
+</span><span style="color:#50fa7b;">testData </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Value
+</span><span style="color:#f8f8f2;">testData </span><span style="color:#ff79c6;">= [aesonQQ|
+</span><span style="color:#f8f8f2;">{
+  &quot;data&quot;: {
+    &quot;horoscope&quot;: {
+      &quot;planetPositions&quot;: [
+        {
+          &quot;planet&quot;: &quot;Sun&quot;,
+          &quot;speed&quot;: {
+            &quot;unSplit&quot;: 1.0196359986110741
+          },
+          &quot;longitude&quot;: {
+            &quot;zodiacSign&quot;: &quot;Capricorn&quot;
+          },
+          &quot;houseNumber&quot;: {
+            &quot;label&quot;: &quot;IC&quot;
+          }
+        }
+      ]
+    }
+  }
+}
+</span><span style="color:#ff79c6;">|]
+</span></code></pre><h1 id="parting-words">Parting words</h1>
+<p>Being able to deal with the idiosyncrasies of whatever JSON comes your way via the flexibility afforded by <code>aeson</code> (and <code>aeson-optics</code>,) and Haskell's ability to derive
+boilerplate; as well as <code>optics</code> to delve deep into data in a reusable, robust manner is a pretty winning combination. Both libraries boast excellent documentation and usable
+compiler errors to guide your way, so the inevitable refactoring that comes with integrating
+with a third party is made rather painless.</p>
+<p>One interesting discovery as I was working through this, was to refer to <a href="https://chrispenner.ca/posts/traversal-systems">this excellent blog post by Chris Penner on the same subject</a>, where he uses <code>lens</code>: a lot of examples here are inspired by that blog post, but I ended up running into some interesting philosophical disagreements between <code>lens</code>, where &quot;everything goes&quot; for the sake of productivity, and <code>optics</code>, where unsound/incompatible operations are made impossible by the &quot;opaque&quot; implementation. I'll explore the differences in a future blog post, using <a href="https://github.com/lfborjas/json-optics-playground/blob/main/src/JsonOpticsPractice/GeneralizingTraversals.hs">my translation</a> of Chris's examples.</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/haskell/">haskell</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/optics/">optics</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/json/">json</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

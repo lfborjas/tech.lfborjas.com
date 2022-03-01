@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Markdown in django</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>2 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2010-08-01
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>Last week, I added markdown support to a little blog engine I wrote for a django tutorial. And well, I accomplished it in minutes! I like markdown because is <em>really</em> easy to write and generates amazing html. It is presented <a href="http://daringfireball.net/projects/markdown/syntax">here</a> and the syntax is explained neatly in <a href="http://stackoverflow.com/editing-help">Stack Overflow</a>, and they use it, too. </p> 
+<p>My approach was really simple: I wanted to write the posts in markdown with a preview (like in the question edition in <a href="http://stackoverflow.com">Stack Overflow</a>), store the posts in markdown and display them in html.</p> 
+<span id="continue-reading"></span><p>So, the steps:<br /> 
+</p> 
+<ol> 
+<li>Install markdown (get it from <a href="http://pypi.python.org/pypi/Markdown/2.0.3">the cheese shop</a> ), if you use app engine, you'll have to copy the <code>markdown</code> folder to your project root.</li> 
+<li>Add <code>django.contrib.markup</code> to your <code>INSTALLED_APPS</code></li> 
+<li>With your content stored as markdown, to show it in templates, you'll simply have to add tag with<code>load markup</code> at the beginning of your templates and use the <code>markdown</code> filter (like in <code>entry.body|markdown</code> to show entries stored in markdown as html).</li> 
+<li>Download <code>showdown.js</code> and copy the minified js to your static files folder. (you can get it from <a href="http://attacklab.net/showdown/">the project homepage</a>)</li> 
+<li>In a template for edition, let's say you have a textarea with id <code>id_body</code> and want to show the preview. Well, add a  <code>div</code> -let's call it <code>preview</code> and the following javascript (added somewhere in your <code>&lt;head&gt;</code>.</li> 
+</ol> 
+<pre style="background-color:#282a36;">
+<code><span style="color:#ffffff;">$</span><span style="color:#f8f8f2;">(</span><span style="font-style:italic;color:#8be9fd;">function</span><span style="color:#f8f8f2;">()</span><span style="color:#ffffff;">{
+        </span><span style="font-style:italic;color:#8be9fd;">var </span><span style="color:#ffffff;">converter </span><span style="color:#ff79c6;">= new </span><span style="font-style:italic;color:#66d9ef;">Showdown</span><span style="color:#ff79c6;">.</span><span style="color:#50fa7b;">converter</span><span style="color:#f8f8f2;">();
+    	</span><span style="font-style:italic;color:#8be9fd;">function </span><span style="color:#50fa7b;">update_description_preview</span><span style="color:#f8f8f2;">()</span><span style="color:#ffffff;">{
+        	$</span><span style="color:#f8f8f2;">(</span><span style="color:#f1fa8c;">&#39;#preview&#39;</span><span style="color:#f8f8f2;">)</span><span style="color:#ff79c6;">.</span><span style="color:#50fa7b;">html</span><span style="color:#f8f8f2;">(</span><span style="color:#ffffff;">converter</span><span style="color:#ff79c6;">.</span><span style="color:#50fa7b;">makeHtml</span><span style="color:#f8f8f2;">(</span><span style="color:#ffffff;">$</span><span style="color:#f8f8f2;">(</span><span style="color:#f1fa8c;">&quot;#id_body&quot;</span><span style="color:#f8f8f2;">)</span><span style="color:#ff79c6;">.</span><span style="color:#50fa7b;">val</span><span style="color:#f8f8f2;">()));
+    	</span><span style="color:#ffffff;">}
+    	$</span><span style="color:#f8f8f2;">(</span><span style="color:#f1fa8c;">&quot;#id_body&quot;</span><span style="color:#f8f8f2;">)</span><span style="color:#ff79c6;">.</span><span style="color:#50fa7b;">keyup</span><span style="color:#f8f8f2;">(</span><span style="font-style:italic;color:#8be9fd;">function</span><span style="color:#f8f8f2;">()</span><span style="color:#ffffff;">{
+        	</span><span style="color:#50fa7b;">update_description_preview</span><span style="color:#f8f8f2;">();
+    	</span><span style="color:#ffffff;">}</span><span style="color:#f8f8f2;">);	
+</span><span style="color:#ffffff;">}</span><span style="color:#f8f8f2;">);
+</span></code></pre><p>And that's it, you have markdown in your app! Don't make humans edit raw html ever again!</p> 
+ <p>-More info can be found <a href="http://www.freewisdom.org/projects/python-markdown/Django">here</a></p> 
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/django/">django</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/markdown/">markdown</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/python/">python</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/javascript/">javascript</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

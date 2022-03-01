@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline"> The unholy alliance, discovering a command line java interpreter</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>4 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2010-09-26
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>I'm gonna give a little talk about java to some people in a couple of days. Yes, <em>java</em>, the new cobol, the language I secretly know, lest I'm banished from the cool kids club. But it has cool stuff. The java virtual machine, the bytecode compiling, the support for unicode and the blessed jruby. I mean, we can run <a href="http://code.google.com/p/appengine-jruby/">ruby on appengine</a> thanks to java! So get that frown off your face and let me tell you 'bout something cool.</p>
+<span id="continue-reading"></span>
+<p>Remember that talk I was talking about before falling into an apologetic digression? Well, I'm writing a slideshow in <a href="http://github.com/schacon/showoff">showoff</a> so people can follow it on the internerd and maybe fork it for their own teaching ends.I have some example code in java, which I intend to show in a demo to clarify some concepts (namely, inheritance and polymorphism). At first I thought of writing a <code>main</code> and then saying &quot;see, we compile this and run this and stuff appears on the terminal, cool huh?&quot;. But python, javascript and ruby have spoiled me. I wanted interaction. I didn't want the public saying &quot;but, what if we change so and so, huh, HUH?&quot; and me saying &quot;oh, lets just open the main again, and write and compile and run and hope I didn't forget a semicolon&quot;. No. I wanted an interpreter. I wanted to write <code>javashell</code> or something of the sort and hack the hack and walk the walk, writing a line and pressing enter and watching the outcome and bowing gently as the crowd bursted in applause at my hello worlds.</p>
+<p>But you can't do that in java. Or can you?</p>
+<p>Why, yes, you can! I asked my good friend <a href="http://duckduckgo.com">the duck</a> for a java interpreter and I found about this awesome project called <a href="http://www.beanshell.org/">beanshell</a>. So I installed and did some nerd magic and lived happily ever after.</p>
+<p>Just kidding, I'm not gonna be a jerk and end the history here, no sir, Imma tell you how I got my long desired <code>javashell</code> with excruciating detail:</p>
+<ol>
+<li>Downloaded <a href="http://www.beanshell.org/download.html">the latest version</a> and copied it to a directory where I store apps.</li>
+<li>Added the <code>jar</code> to my <code>CLASSPATH</code> so the <code>java</code> command and all java code can have some of the magic of beanshell by adding the following to my <code>~/.bashrc</code> (so it's there forever, like love): <code>export CLASSPATH=$CLASSPATH:$HOME/$APPS_DIR/bsh-2.0b4.jar</code> .</li>
+<li>Now, as <a href="http://www.beanshell.org/manual/bshmanual.html#Download_and_Run_BeanShell">it's written</a> the command <code>java bsh.Interpreter</code> fires up the interpreter in command line. But that's so verbose, so <em>java</em>... So I ran <code>sudo echo 'java bsh.Interpreter' &gt; /usr/local/bin/javashell; sudo chmod +x /usr/local/bin/javashell</code> to have the command <code>javashell</code> available forever, like in my wildest guilty java dreams.</li>
+</ol>
+<p>But the fun doesn't end there!</p>
+<p>As the <a href="http://www.beanshell.org/manual/bshmanual.html#Remote_Server_Mode">manual says</a> you can provide a beanshell in a locally served page. That's right, kids: I'll be able to tell the people at my talk &quot;so, wanna try this out, alright, open a browser and go to whatever.local.ip:1234 and test the code yourself, thanks very much&quot;. </p>
+<p>Can you imagine what teachers that -for some unfathomable reason- teach java could do with beanshell? Well, the kind of things that ruby teacher could do with <a href="http://tryruby.org/">tryruby</a> I guess: having totally interactive classes! (Altough tryruby has an individual interpreter for each connected client and the beanshell server is actually the same instance for all, which is like really dangerous, so use with caution, and a helmet, and maybe an underprivileged user in your OS, but also cool as instances and classes are shared).</p>
+<p>###Update</p>
+<p>beanshell comes with a rather old version of java, so stuff like <a href="http://download.oracle.com/javase/tutorial/java/generics/index.html">generics</a> doesn't work.</p>
+<p>Also, I wanted a REPL and beanshell is harldy one, so I wrote this little wrapper in <a href="http://www.jruby.org/">JRuby</a>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">require </span><span style="color:#f1fa8c;">&quot;java&quot;
+</span><span style="color:#6272a4;">#gotta have the beanshell jar somewhere:
+</span><span style="color:#ff79c6;">require </span><span style="color:#f1fa8c;">&quot;/usr/local/src/bsh-2.0b4.jar&quot;
+</span><span style="color:#6272a4;">#cf. http://bogojoker.com/readline/
+</span><span style="color:#ff79c6;">require </span><span style="color:#f1fa8c;">&#39;readline&#39;
+</span><span style="color:#6272a4;">#based on this: http://blogs.sun.com/coolstuff/entry/using_java_classes_in_jruby
+</span><span style="color:#f8f8f2;">include_class </span><span style="font-style:italic;color:#66d9ef;">Java</span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;">bsh</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">Interpreter
+
+i </span><span style="color:#ff79c6;">= </span><span style="font-style:italic;color:#66d9ef;">Interpreter</span><span style="color:#ff79c6;">.new
+begin
+    while</span><span style="color:#f8f8f2;"> instr </span><span style="color:#ff79c6;">= </span><span style="font-style:italic;color:#66d9ef;">Readline</span><span style="color:#ff79c6;">.</span><span style="color:#ffffff;">readline</span><span style="color:#f8f8f2;">(</span><span style="color:#f1fa8c;">&#39;&gt; &#39;</span><span style="color:#f8f8f2;">, </span><span style="color:#bd93f9;">true</span><span style="color:#f8f8f2;">)
+        </span><span style="color:#ff79c6;">begin
+            </span><span style="color:#ffffff;">puts </span><span style="color:#f1fa8c;">&quot;=&gt; </span><span style="color:#f8f8f2;">#{i</span><span style="color:#ff79c6;">.</span><span style="color:#ffffff;">eval</span><span style="color:#f8f8f2;"> instr}</span><span style="color:#f1fa8c;">&quot;
+        </span><span style="color:#ff79c6;">rescue </span><span style="font-style:italic;color:#66d9ef;">Java</span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;">bsh</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">EvalError =&gt; e
+            </span><span style="color:#ffffff;">puts </span><span style="color:#f1fa8c;">&quot;!# </span><span style="color:#f8f8f2;">#{e}</span><span style="color:#f1fa8c;">&quot;
+        </span><span style="color:#ff79c6;">end
+    end
+rescue </span><span style="color:#ffffff;">Interrupt </span><span style="color:#f8f8f2;">=&gt; e
+    </span><span style="color:#ffffff;">system </span><span style="color:#f1fa8c;">&#39;stty&#39;</span><span style="color:#f8f8f2;">, stty_save
+    </span><span style="color:#ffffff;">exit
+</span><span style="color:#ff79c6;">end
+</span></code></pre>
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/linux/">linux</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/java/">java</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/scripting/">scripting</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

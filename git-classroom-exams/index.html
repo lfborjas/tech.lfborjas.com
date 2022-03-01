@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Git in the classroom: cloning&#x2F;pushing exams in programming courses</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>7 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2010-10-30
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>I had to apply an exam this week for a web development for beginners course I'm teaching. We're using ruby for the server side for a couple of reasons: <a href="http://heroku.com/">heroku</a> is an excellent option for one's first deployments and I wanted to get a better grip on <a href="http://rubyonrails.org/">Ruby on rails 3</a> and html5 for my own improvement (and I've found that there's no better way to learn stuff the good way than teaching them). </p>
+<p>No decent developer can survive without some sort of source control management. The one I know more of is <a href="http://git-scm.com/">git</a> and I'm a huge fan of <a href="https://github.com/">github</a>. We're actually using <a href="http://github.com/blog/674-introducing-organizations">github organizations</a> to manage the class projects (the github staff is really great, they've let me use private repositories for the student groups at no extra charge). </p>
+<span id="continue-reading"></span>
+<p>The exam for this period was a practical one: I gave them a site (that I wrote and deployed on heroku) and they had to reproduce it's functionality in a day. I like that kind of exams: they're a learning experience themselves. But the week before it, i found myself re-thinking the delivery method. You see, back in the day, those kinds of exams were either sent to the teacher by email or uploaded to the college's private file server. I wanted my students to practice their git so my first thought was to ask them to upload their solutions as a <a href="http://progit.org/2010/03/10/bundles.html">git bundle</a> to our <a href="http://class.io/">course communication platform</a>, yet, after that, I thought: &quot;hey, wouldn't it be cool that they could just <code>git push</code> their exam and be done with it&quot;. The idea was compelling: instead of waiting till the end of the day -the exam deadline- to upload their exams, they could just push as many times they wished and the last push they made before the deadline was going to be considered as their final response. Motivated by this, I dedicated the days before the exam to it.</p>
+<p>The first thing I needed was to have 15 private git repositories available, with read/write access to just myself and each individual student. I didn't want to ask the github guys for even more private repos, which would be active for just a couple of days and I wanted to learn more about git and what hosting git implies, so I bought a vps from <a href="http://prgmr.com/xen/">prgmr.com</a> and installed <a href="http://scie.nti.st/2007/11/14/hosting-git-repositories-the-easy-and-secure-way">gitosis</a>. I asked the students to email me their public ssh keys and added them to my gitosis admin. I must say, gitosis is the raddest thing: it lets me easily manage git repositories without even having to login to the remote server, just pushing changes whenever I'm ready.</p>
+<p>Now, my first idea -and one I will definitely keep working on- was to have a web interface that would let me create an exam, assign it to users and give it a start date  and it would create the repositories and even add/remove the users from the writers list on the gitosis configuration file when the dates would necessitate it - the <a href="http://github.com/masone/gitosis-web-admin">gitosis web admin project</a> gave me the idea. Sadly, I had no time for that and had to do it by hand -which is pretty easy, anyway.</p>
+<p>I also wanted to have an interface like the github dashboard to have quick feedback for when a student pushed their solution and what files they updated (because, being their first incursions into git and scm in general, they could easily forget to <code>add</code> files). I remembered the notion of <code>hook</code> in git and read the <a href="http://www.kernel.org/pub/software/scm/git/docs/githooks.html">documentation</a>: there is a hook called <code>post-receive</code> which is a script that will be called upon a successful push. Just what I wanted. So I created a ruby script that would <code>post</code> to a <a href="http://www.sinatrarb.com/">sinatra</a> app information about the push - I got that idea from the github <a href="http://help.github.com/post-receive-hooks/">post-receive hooks service</a>. </p>
+<p>Now, I have the conviction that when one finds himself repeating a task that could be automated one is betraying his reason, so, even though I could just create the 15 repos by hand and then add the <code>post-receive</code> hook to each of them, I modified the git template on the server (located in <code>/usr/share/git-core/template</code> by default) to add the hook and then wrote a ruby script to use <a href="http://github.com/mojombo/grit">grit</a> to fork a template directory (which contained a readme with the exam requirements and some helper files) 15 times, naming the repositories after the registry number for each student.</p>
+<p>So at the end I had the 15 private repos forked from a template that could be cloned by each student with all the privacy needed (only I and the owner of each repo could read/write from it) and post-receive hooks to follow the progress of the students during the exam. I did this in three days and it was remarkably easy, because of such amazing projects as gitosis and grit.</p>
+<p>I had my share of trouble, though: first, <em>one day</em> after acquiring the vps over at prgmr.com I found myself victim of a man in the middle attack in ssh: I was doing tests with the gitosis server when, while pushing a repo, I was warned that &quot;someone could be doing nasty stuff&quot;. I logged in to the server and checked the ssh files (which, if changed, could change the fingerprint and, thus, be detected as an intrusion in the communication), they weren't changed. So I found some advice on the internerd that changing my ssh port to a non-standard one and restricting access by keys and users could avoid that kind of attack. I applied it and solved it, but that meant that yesterday I had to invest some minutes of the exam asking the students to change their ssh configuration to connect via the other port -not the 22- to my git server. Solving that required a couple of angry hours. But it wasn't the end of the problems: close to the deadline some students contacted me saying that when trying to push they were receiving a <code>connection refused</code> error. I had experienced that the day before when working in college, but attributed it to the firewall. I am not sure as of today, but it seems that it was actually an error in the server side: one had to push like twenty times before the server accepted the connection, so some students ended up sending me their work via email after all.</p>
+<p>Nevertheless, I really like the idea of using git to apply evaluations, and am thinking of creating a web interface to let teachers create exams/homeworks that will translate into private git repos to which the students could push. There are some parts of the process I'd like to automate and simplify (I'd like to offer the service to people that know enough git to <code>clone/pull/push</code> , but have no time to set up private hosting servers and stuff) and there are two more exams to come for this class, so I'll keep experimenting. I'm a little concerned about prgmr, though, I was attacked twice (the first time with a dictionary attack before I even logged in for the first time) and had that unfortunate incident with the <code>sshd</code> (which could be my fault or because of the technical limitations of the vps I chose). In their defense, they have a really cool customer support (they don't assume you are stupid and answer really fast). </p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/git/">git</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/ruby/">ruby</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/linux/">linux</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/prgmr/">prgmr</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/webdev/">webdev</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

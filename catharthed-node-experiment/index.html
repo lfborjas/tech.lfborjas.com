@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Catharted.info, a node.js experiment</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>6 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2010-08-15
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>Let's go and rant a little somewhere.</p>
+<p>So, I released to the wild today an experimental little site: <a href="http://www.catharted.info">catharted info</a> . The rules there are simple: rant a little, read other rants, watch them disappear forever. The source is open and you're free to browse it in <a href="http://github.com/lfborjas/catharted">the github repository</a>.</p>
+<span id="continue-reading"></span>
+<p>My reasons for building this site were two: </p>
+<p><strong>Have a place for occasional ranting</strong>: oftentimes I've found myself wanting to say something, to <em>broadcast</em> something just to get it off my chest, like a complaint or a very offensive joke or remark. But let's face it, even in those dire times, when we dare not say what we want to anyone, we'd like the secret satisfaction of knowing that it would not be a total scream into the void if we say it to ourselves, someone, somewhere, must hear it too. And it would be cool also that that someone doesn't know us by our voice, so we don't have to face the sour regret of the consequences. 
+Being an internet citizen, a frequent web traveler and a lover of the written media, I have always wanted a place just like that: broadcast stuff with no regrets, a venting site, the internet's pillow. So, being bored and sleep deprived, instead of googling for it, I made it, thus fulfilling this need of mine and also my second purpose:</p>
+<p><strong>Experiment with node.js in the wild</strong>: I'm working on a formal node.js project, but I wanted to see how hard it was to create a little site and deploy it. So I set up to it. First I'll talk about the deployment, because the development is longer and would probably bore you guys.</p>
+<p><strong>The deployment story</strong></p>
+<p>First and foremost, my total investment so far has been of <strong>three bucks</strong>: the .info domain names are on sale on namecheap and a some really cool dude is offering free <a href="http://blog.nodejshost.com/">VPS servers for node.js developers</a> for the hosting. Maybe later he'll charge me for it, or I'll have to use one of the linode instances I have access to, but, for now, I rolled up the site in less than a week's worth of late-nights and put it up the internerd for less than a beer's price. Not that I drink, though.</p>
+<p>This was the most obscure phase, as I found lots of alternatives: some people say that you should use <a href="http://howtonode.org/deploying-node-upstart-monit">upstart</a>, others, that you should use <a href="http://howtonode.org/deploying-node-with-spark">spark</a>, some others, that you should do <a href="http://bigbangtechnology.com/post/installation_configuration_deployment_node.js_applications_on_media_temple">weird stuff that bored me while reading</a> . </p>
+<p>After all, what you want is two things:  <em>to have a way to run the node process as a dæmon and automatically reload it when crashing</em> and <em>to have a way to have access to the node server via a normal web server</em>. It would also be nice to have a way of redirecting the standard output and standard error streams to a log file. </p>
+<p>I went with the <a href="http://dailyjs.com/2010/03/15/hosting-nodejs-apps/">fastest solution</a> : using nginx for reverse proxying and monit, for not letting the process crash.</p>
+<p><strong>The development story</strong></p>
+<p>If you've never heard about <a href="http://nodejs.org/">node.js</a>, go check it out now. I can wait. </p>
+<p>Did you check it out? Isn't it mega rad? You didn't? Ok, no problem, let me summarize it for you: <em><strong>non-blocking, event based, low-resource consuming server technology. Also, server side javascript, that's right, with it you don't have to think in two languages for client/server development</strong></em></p>
+<p>I created  the app with the <a href="http://expressjs.com/">express.js framework</a>. It's inspired by <a href="http://www.sinatrarb.com/">sinatra</a>, the simple framework for ruby and built over the <a href="http://senchalabs.github.com/connect/">connect middleware stack</a>. I must say that the documentation is a little obscure or lacking sometimes, but it must be that I am spoiled by the <a href="http://docs.djangoproject.com/en/1.2/">django documentation</a>, which is like super complete. I had a hard time with some stuff, like getting post requests to work and error handling. For the former, after poking around in some projects, I discovered that I needed a middleware to decode the body of the post requests, so I added <code>app.use(connect.bodyDecoder());</code> to the server code in the app and that was that. For error handling, I followed the <a href="http://github.com/visionmedia/express/blob/master/examples/pages/app.js">example</a> in the author's github repository, but that only did it for server errors, I'm still quite at loss as how to manage Not found errors. Oh, and those <a href="http://github.com/visionmedia/express/tree/master/examples">examples</a> are handy, check 'em out.</p>
+<p>The main reason for using a framework was that I like templates for my pages. And I am a new convert to <a href="http://haml-lang.com/">haml</a> (though I still don't know how to do inline markup -stuff like <code>&lt;p&gt;you know &lt;em&gt;this&lt;/em&gt; kinds of things</code>). For that, I found that there were two haml implementations for javascript, <a href="http://github.com/visionmedia/haml.js">haml.js</a> and <a href="http://github.com/creationix/haml-js">haml-js</a>. The author of the former is also the express.js framework author, and he says his version is better and has some numberly looking numbers to prove it, so I believed him. But, alas, if you install haml.js with <a href="http://github.com/isaacs/npm">npm</a> (the node package manager) the command would be <code>sudo npm install hamljs</code> so in your express apps you'd have to set the engine to hamljs, not haml -with something like this <code>app.set('view engine', 'hamljs');</code>- and also name your templates with the extension .hamljs instead of .haml. If you install with <a href="http://github.com/visionmedia/kiwi">kiwi</a>, though, there shouldn't be a problem because the command would be <code>kiwi install haml</code>.</p>
+<p>Also, for stylesheets I used <a href="http://sass-lang.com/">sass</a>, because I liked the idea of having functions, mixins  and variables. I'm aware that there are <a href="http://github.com/visionmedia/sass.js/tree/">node.js modules for sass</a>, but I just used the command line utility, 'cause I don't like to do stuff client side <em>every time</em> that I could perfectly do <em>one</em> time, server side.</p>
+<p>For the client side, I used <a href="http://jquery.com/">jquery</a>, 'cause I used it like forever and it's the <a href="http://mootools.net/slickspeed/">fastest for DOM queries</a></p>
+<p>So, check it out and rant a little. Or start your own node.js development adventure, it's fun!</p>
+<p>Also, if it crashes or you kinda hate it, let me know, after all nothing done in a couple of days is flawless.</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/node-js/">node.js</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/express/">express</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/haml/">haml</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/sass/">sass</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

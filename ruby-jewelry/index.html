@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Ruby jewelry</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>2 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2010-08-29
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>Yesterday I had no money to go out and the weather sucked. So I decided to pick up <a href="http://serendipitron.tumblr.com/">one</a> of my side projects and hack for a while.</p>
+<p>For that project I need to fundamental components, a way of extracting keywords in a text and a wrapper for the public rss feeds of <a href="http://delicious.com">delicious.com</a>. So I created <a href="http://github.com/lfborjas/webtagger">webtagger</a> and <a href="http://github.com/lfborjas/deliruby">deliruby</a> (this morning I thought to rename it to &quot;delirious&quot;, which is cooler, but, well, nevermind) and released them as opensource gems for whomever wants to to hack them and use them. I think it's cool to be able to release something easy to use for others (using <code>gem install</code> instead of downloading the source, extracting it, installing it and all that fuzz).</p>
+<p>So, how <em>do</em> you create a gem?</p>
+<span id="continue-reading"></span>
+<p>Easy! I used <a href="http://github.com/technicalpickles/jeweler">jeweler</a> to create the gem skeleton and manage it and <a href="http://docs.rubygems.org/read/chapter/6">rubygems.org</a> to host it, and here's how:</p>
+<ul>
+<li>Create your gem with <code>jeweler your-gem</code></li>
+<li>Edit the <code>Rakefile</code> to add the description and dependencies</li>
+<li>Write some tests in the <code>test/</code> dir or start coding in the <code>lib/</code> dir.</li>
+<li>If you want to provide a binary executable, just add it in the <code>bin/</code> dir and declare it in the Rakefile with <code>gem.executables &lt;&lt; your-bin-name</code></li>
+<li>When you're ready to deploy the first version, just run <code>rake version:bump:minor</code> (more on major-minor-patch versioning <a href="http://apr.apache.org/versioning.html">here</a> )</li>
+<li>Then, run <code>rake build</code> to create the gemspec (<code>your-gem.gemspec</code>) and the gem itself (will be created in a <code>pkg</code> directory). </li>
+<li><code>cd</code> to <code>pkg</code> and simply run <code>gem push</code> the <code>.gem</code> file for the version you're releasing and you're done! </li>
+</ul>
+<p>Keep in mind that you need to be subscribed to <a href="http://rubygems.org/">rubygems.org</a> -don't worry, it's free- and have a version of rubygem greater or equal to 1.3.7</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/ruby/">ruby</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/rubygems/">rubygems</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

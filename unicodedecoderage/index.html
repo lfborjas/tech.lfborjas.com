@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline"> Turning into rageguy, python and the UnicodeDecodeError</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>2 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2010-08-17
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>My main projects are in Django, and I've become accustomed to developing in english. But my main audience speaks spanish. So crazy stuff happens when other people test my apps and we see, astonished and enraged, a  <code>UnicodeDecodeError</code>. In fact, I took a picture of myself when such an error occurred:</p>
+<span id="continue-reading"></span>
+<p><img src="http://i235.photobucket.com/albums/ee282/brainimpalement/rageguy.gif" alt="UnicodeDecodeRage" title="PYYYYTHOOON" /></p>
+<p>So I've oft dived into the unfathomable depths of google to search for a solution to no avail. <strong>Until now</strong>. </p>
+<p>In a comment of an obscure blog a friend was reading in the neighbor's cat netbook, we came across
+this little line of code:</p>
+<p><code>sys.setdefaultencoding(name)</code></p>
+<p>But not too fast, kimosabe!</p>
+<p>Before you go importing sys everywhere and pasting that. Read the python documentation: <em>&quot;This function is only intended to be used by the site module implementation and, where needed, by sitecustomize. Once used by the site module, it is removed from the sys module’s namespace.&quot;</em></p>
+<p>That means that when you try to import it, <em>it won't be there</em>. Because it's <a href="http://tarekziade.wordpress.com/2008/01/08/syssetdefaultencoding-is-evil/">really really dangerous</a> and you should be doing conversions back and forth from <code>str</code> to <code>unicode</code>. But I've been there, done that, and still that error lurks in my nightmares.</p>
+<p>If you fear not those dreadful conventions, You can reload the module and use it (perhaps in a module that gets imported once, like <code>urls.py</code> or <code>models.py</code> in a django project) :</p>
+<p><code>import sys; reload(sys);sys.setdefaultencoding('utf-8') </code></p>
+<p>There you go, a hackish solution for a ridiculous problem.</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/python/">python</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/django/">django</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

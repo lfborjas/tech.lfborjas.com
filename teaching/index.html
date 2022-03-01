@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Magic considered harmful: teaching the first programming language</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>8 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2011-03-26
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>This might come off as <em>yet another developer ranting against java</em>, so let me state this before even stating my goal today: <strong>I think java is a neat language which shows off some good ideas that have clearly influenced the programming community for the past years</strong>.
+But, as highly as I think of java as a kinda good designed product and harbinger of very nice things, like the java virtual machine (cradle of fine languages like <a href="http://www.scala-lang.org/">scala</a> and <a href="http://clojure.org/">clojure</a>)and the widespread use of just-in-time compilation, I consider that teaching it as a first programming language is harmful, because in teaching it you have two choices: either delve into thorough and sometimes hard explanations as to why things have to be done the way they're done or resort to <em>magical</em> explanations: &quot;write it like that because I say so&quot;. And both have equally pejorative consequences: the former leaves little time to teach the fundamentals of programming, like control flow, functions, recursion, environments/computational objects, logic and testing; and the latter sets a rather weak foundation which dooms the future of future engineers/computer scientists. </p>
+<span id="continue-reading"></span>
+<p>In the college I now work in, I was in the first group to which java was taught from the very first course. I had a remarkable teacher who did his best to bequeath upon us good programming practices and paradigms, but I'm neither a deep nor a fast thinker so I really need to understand where things come from and what's their purpose so I can build upon them; hence, because my teacher chose to skim the bureaucratic mess that java looks like for a beginner to a simple &quot;see these lines? Write them as they are, I'll explain later&quot; to go on to teaching actual programming, I got off with the wrong foot: a part of my brain couldn't accept the concepts, as they where depending on unexplained magic (what was that class thingy? And a package? What does <code>public static</code> mean? Why do we use <code>new</code>? Why are we using class names to invoke methods sometimes and sometimes these weird variables whose type is a class?), and I ended up being kinda good for a while, but when it came to thinking algorithmically and logically, I just failed: I wasn't a programmer, I was a java robot. And even though my teacher did his best to dispel the magic in the second semester, when we talked about object oriented programming in java and c++, especially the C++ course, when he managed to get into the details of memory management, reference usage and the call stack, I still felt unable to program or, worse yet, to solve problems by programming.</p>
+<p>For most of my career I was resigning to the fact that maybe my thing wasn't software development, but maybe project management or database administration or something like that, because I didn't grasp programming at all. </p>
+<p>I actuallybegan appreciating programming (and getting good at it) towards the end of my career, when I got my first job in an <a href="http://class.io/">awesome project</a> (now turned startup) where I had to learn many new things by my own: php, python, javascript, linux administration, mysql, html and css; in languages like javascript, php and python (<strong>especially python</strong>), the abstractions where so bare and malleable that I could finally wrap my head around many things from my early college days, and I began programming for fun and reading/learning things just for the heck of it. 
+So, by then, when I began taking computer science courses things started fall in their place: the object model wasn't as unfathomable, the idea of a main entry point looked innocuous, closures, symbol tables, environments, everything clicked! I even enjoyed using flex and cup with java in my compilers course, wherein we implemented a subset of ADA. And it wasn't until that course, the very last of my career, that <em>I could say that I understood java</em>.</p>
+<p>So, you see, it took me more than four years to feel comfortable writing java code, <em>after</em> I had <em>really</em> learnt how to program with python.</p>
+<p>As irony would have it, I teach now the object oriented programming course in that very college (we have a &quot;structured and logical programming&quot; course before it, in java) and I'm seeing young minds struggling with the same I struggled: when I explain to them what an instance method is, and how it differs from a class method; when I tell them about encapsulation and how in java everything is an object, they get really confused: after all, the first three months of their life they live a lie: they are told they're doing structured programming in a language where everything is in the context of an object, they are told that class level variables are global variables, they are accustomed to writing a bunch of class methods but seeing them as module level of global. They can't even begin to understand what class loading is and why are we writing programs and then calling new on them. The first few weeks are very hard for them: we don't learn object oriented programming, we unlearn a travesty of structured programming and just keep the weak flow control and logic foundation that the previous teacher did the impossible to teach amongst so many explicit magic and unexplained keywords.</p>
+<p>And the result is, only a few learn the principles behind it all: OOP and structured programming can live together as means of abstraction.</p>
+<p>Recently, I began teaching the latter half of the first programming course to a very special group of students: not undergraduate kids but adults that wanted a certificate in mobile or web development. Also in java. None of them has any formal CS training, but all of them have been around computers enough to understand when we're talking about memory management and abstractions. So with them I took a different approach: instead of deceiving them into believing in structured java, I took a couple of days to talk to them about the OOP paradigm and how everything in java is an object, what is a reference, what is instantiation, what an instance method is and what a class method is. I took a very simple program (reading numbers from the standard input with an instance of <code>Scanner</code>) and explained <strong>all</strong> of the magic to them. To my surprise, their reaction wasn't &quot;whatcha talkin' 'bout willis?&quot;, but &quot;aha, <em>now</em> we get the first half, thanks for telling us what the hell that classMainpublicstaticvoidmainstringargs whatchamacallit is all about!&quot;. Now, with the magic out of the way, they're comfortable enough to write sorting and searching procedures, <strong>understanding</strong> the algorithmic reasoning behind it: the syntax makes sense now.</p>
+<p>So, you see, in order to understand java and program in it comfortably: you <strong>must</strong> understand all that you type, and that involves either getting an engineering degree or having enough experience with computers to have the guts to dive into the metaland explain all of the magic from day one, so there are no loose ends. Do undergrad students meet this criteria?</p>
+<p>Languages with less syntactic intricacies like python or ruby seem, thus, more suitable, because, although they use an implicit module or an implicit instance evaluation context (respectively), none of that &quot;magic&quot; is required to <em>write</em> explicitly by a beginner, so an instructor can teach programming and then look under the hood if he likes, because the magic is layered, hidden until needed, and not out in the open defying the faint at heart, as is the case of java. For batman, even C has less magic to it.</p>
+<p>I like even <em>more</em> the approach that the <a href="http://www.teach-scheme.org/">teach-scheme/reachJava</a> takes: they teach a powerful language with almost no syntax and a <a href="http://www.htdp.org/">robust methodology</a> so nothing is in the way of programmers and then they go onto more &quot;serious&quot; development in java, when the concepts of programming are well grounded enough to understand its magic without being daunted by doing <em>that</em> and <em>also</em> learning what a function is! I'll have to confess that I like scheme a lot because I personally feel that reading and watching videos of the famous <a href="http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-001-structure-and-interpretation-of-computer-programs-spring-2005/">sicp course</a> has improved my understanding of computer science by a great extent.</p>
+<p>So, java is not a good choice as a first programming language because it imposes upon the student the burden of understanding the explicit object oriented paradigm before even grasping what branching is; and I consider that other languages that let instructors get to high level concepts gradually instead of ignoring them and imposing them as magic are far better because they are less of an obstacle in the way of setting the foundations of the art of computer programming.</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/teaching/">teaching</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/java/">java</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/scheme/">scheme</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/python/">python</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/ruby/">ruby</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

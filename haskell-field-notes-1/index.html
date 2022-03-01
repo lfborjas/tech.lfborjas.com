@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Haskell Field Notes: 2021</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>26 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2021-11-11
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>In the past year of <em>not</em> updating this blog, even though I said I would, I've been quite busy
+shaving yaks: in addition to the apocalypse, house work, and my day job, my wife and I have been
+working on a little Jungian-oriented astrology app with an accompanying Haskell backend. 
+This has meant a surprising amount of new terrain to traverse, and I'll try to jot down some 
+of the highlights here: I've gone from
+the depths of C memory tomfoolery, to the heights of actually reading some books and papers on category
+theory, passing through the vast fields of Haskell type level programming. I'll try to cover a bit more breadth than depth in a couple of &quot;stories&quot; from the Haskell trenches.</p>
+<span id="continue-reading"></span><h1 id="story-1-building-a-haskell-api">Story 1: Building a Haskell API</h1>
+<p>This past year, I've developed an open source <a href="https://geocode.city">city name autocompletion service</a>, and a GraphQL backend for a still-in-progress app. I've had to put a lot of my previous industry experience towards choosing the most
+ergonomic libraries and approaches, and I'm both glad that Haskell has so many interesting proposals for building
+robust, maintainable applications, and slightly traumatized at how <em>niche</em> some of these things can get: this ain't your grandpa's Ruby on Rails!</p>
+<h2 id="building-a-haskell-api-the-web-framework">Building a Haskell API: the web framework</h2>
+<p>We're building a React Native app, and as such, we needed an API to furnish data to draw charts, and show
+a calendar of events (almanac-style,) in addition to the usual account management stuff. The tricky part of
+drawing charts and astrological events is that they're rather deep data: a given natal chart will have
+planetary positions, each with speed and position information about a planet, house cusps, aspects with their respective orbs and information, and much more. I initially started working on a regular JSON API, using <a href="https://docs.servant.dev/en/stable/"><code>Servant</code></a>, just like I did for our little city name autocompletion
+service, <a href="https://geocode.city">geocode.city</a> but the fact that each complex datum could be composed of further
+complex data made me think: wouldn't it be nice to not sweat how detailed the API can be, if the client
+has the option to only request what they need, and as much stuff together as they need? This in fact is the mission
+statement of GraphQL, so I started looking for Haskell libraries.</p>
+<p>After watching Alejandro Serrano's <a href="https://www.youtube.com/watch?v=JbeqwfZ2dRc">excellent talk about GraphQL</a>, I decided to give <a href="https://github.com/higherkindness/mu-haskell">mu</a> a try: I quite liked how one can describe the 
+schema in a <code>.graphql</code> file, and then generate types from that. I quickly ran into an <a href="https://github.com/higherkindness/mu-haskell/issues/293">issue with arbitrary scalars</a>, which Alejandro was <em>very</em> quick to fix himself, but as my schema grew, and I had to introduce some enumerated types, the advanced type trickery at play in <code>mu</code> broke down
+and my code would no longer compile (I haven't had a chance to put together an example repo and report an issue, will try to soon!) I believe one has the option to just write the types by hand, but the machinery already felt a bit too opaque between that and hooking into the underlying web server and effect system (more on that later.) Reluctantly, since I'm a huge fan of what <code>mu</code> brings to the table in theory, I moved to the more humble, but stable, <a href="https://morpheusgraphql.com/about/">morpheus-graphql</a>. My schema has worked fine there, despite a couple of
+minor template haskell foibles I was able to fix at the schema definition site. </p>
+<p>As an example, here's an excerpt of a handler for a &quot;moment horoscope&quot; request:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">resolveMoment </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">API</span><span style="color:#f8f8f2;">.</span><span style="font-style:italic;color:#8be9fd;">AppM </span><span style="color:#ffffff;">sig m </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">API</span><span style="color:#f8f8f2;">.</span><span style="font-style:italic;color:#8be9fd;">MomentArgs </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">ResolverQ </span><span style="color:#6be5fd;">() </span><span style="color:#ffffff;">m </span><span style="font-style:italic;color:#8be9fd;">API</span><span style="color:#f8f8f2;">.</span><span style="font-style:italic;color:#8be9fd;">Moment
+</span><span style="color:#f8f8f2;">resolveMoment </span><span style="color:#bd93f9;">API</span><span style="color:#ff79c6;">.</span><span style="color:#bd93f9;">MomentArgs</span><span style="color:#f8f8f2;">{</span><span style="color:#bd93f9;">API</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">utcDate} </span><span style="color:#ff79c6;">= do
+</span><span style="color:#f8f8f2;">  parsedTime </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> lift </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> parseZonedTime utcDate
+  moment&#39; </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> lift </span><span style="color:#ff79c6;">$ </span><span style="color:#bd93f9;">Domain</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">moment parsedTime
+  pure </span><span style="color:#ff79c6;">$
+    </span><span style="color:#bd93f9;">API</span><span style="color:#ff79c6;">.</span><span style="color:#bd93f9;">Moment
+</span><span style="color:#f8f8f2;">      (resolvePlanetPositions </span><span style="color:#ff79c6;">$ </span><span style="color:#bd93f9;">Domain</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">momentPlanetPositions moment&#39;)
+      (resolveAspects (</span><span style="color:#bd93f9;">Domain</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">momentPlanetaryAspects moment&#39;, </span><span style="color:#bd93f9;">[]</span><span style="color:#f8f8f2;">))
+</span></code></pre>
+<p>With the schema:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">type </span><span style="color:#f8f8f2;">Aspect </span><span style="color:#ffffff;">{
+  </span><span style="color:#f8f8f2;">definition: AspectDefinition</span><span style="color:#ff79c6;">!
+  </span><span style="color:#f8f8f2;">phase: AspectPhase</span><span style="color:#ff79c6;">!
+  </span><span style="color:#f8f8f2;">orb: SplitDegrees</span><span style="color:#ff79c6;">!
+  </span><span style="color:#f8f8f2;">aspecting: AspectParticipant</span><span style="color:#ff79c6;">!
+  </span><span style="color:#f8f8f2;">aspected: AspectParticipant</span><span style="color:#ff79c6;">!
+</span><span style="color:#ffffff;">}
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#f8f8f2;">PlanetPosition </span><span style="color:#ffffff;">{
+  </span><span style="color:#f8f8f2;">planet: Planet</span><span style="color:#ff79c6;">!
+  </span><span style="color:#f8f8f2;">houseNumber: HouseNumber
+  latitude: SplitDegrees</span><span style="color:#ff79c6;">!
+  </span><span style="color:#f8f8f2;">longitude: SplitDegrees</span><span style="color:#ff79c6;">!
+  </span><span style="color:#f8f8f2;">speed: SplitDegrees</span><span style="color:#ff79c6;">!
+  </span><span style="color:#f8f8f2;">declination: SplitDegrees</span><span style="color:#ff79c6;">!
+</span><span style="color:#ffffff;">}
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#f8f8f2;">Moment </span><span style="color:#ffffff;">{
+  </span><span style="color:#f8f8f2;">planetPositions: </span><span style="color:#ff79c6;">[</span><span style="color:#f8f8f2;">PlanetPosition</span><span style="color:#ff79c6;">!]!
+  </span><span style="color:#f8f8f2;">aspects: </span><span style="color:#ff79c6;">[</span><span style="color:#f8f8f2;">Aspect</span><span style="color:#ff79c6;">!]!
+</span><span style="color:#ffffff;">}
+</span></code></pre>
+<p>(both the schema and the resolver recursively rely on further functions and types, but a given query may not traverse the whole thing!)</p>
+<p>Here's an example request and response:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ffffff;">{
+  </span><span style="color:#f8f8f2;">moment(</span><span style="font-style:italic;color:#ffb86c;">utcDate</span><span style="color:#f8f8f2;">: {utcFormatted: </span><span style="color:#f1fa8c;">&quot;2021-06-26T00:00:00Z&quot;</span><span style="color:#f8f8f2;">})</span><span style="color:#ffffff;">{
+    </span><span style="color:#f8f8f2;">planetPositions</span><span style="color:#ffffff;">{
+      </span><span style="color:#f8f8f2;">planet
+      longitude</span><span style="color:#ffffff;">{
+        </span><span style="color:#f8f8f2;">unSplit
+        degrees
+        minutes
+        seconds
+      </span><span style="color:#ffffff;">}
+    }
+  }
+  
+}
+
+</span><span style="color:#f8f8f2;">// returns
+
+</span><span style="color:#ffffff;">{
+</span><span style="color:#f8f8f2;">  &quot;data&quot;: {
+    &quot;moment&quot;: {
+      &quot;planetPositions&quot;: [
+        {
+          &quot;planet&quot;: &quot;Sun&quot;,
+          &quot;longitude&quot;: {
+            &quot;unSplit&quot;: 94.6277690291843,
+            &quot;seconds&quot;: 40,
+            &quot;minutes&quot;: 37,
+            &quot;degrees&quot;: 4
+          </span><span style="color:#ffffff;">}
+</span><span style="color:#f8f8f2;">        },
+        </span><span style="color:#ffffff;">{
+</span><span style="color:#f8f8f2;">          &quot;planet&quot;: &quot;Moon&quot;,
+          &quot;longitude&quot;: {
+            &quot;unSplit&quot;: 291.47395189460417,
+            &quot;seconds&quot;: 26,
+            &quot;minutes&quot;: 28,
+            &quot;degrees&quot;: 21
+          </span><span style="color:#ffffff;">}
+</span><span style="color:#f8f8f2;">        }]
+    }
+  }
+}
+</span></code></pre>
+<p><strong>Summary</strong> Servant is great for REST-ful APIs; graphql support is still suffering some growing pains, but Morpheus
+has proven to be reliable and stable so far!</p>
+<h2 id="building-a-haskell-api-an-effects-system">Building a Haskell API: an effects system.</h2>
+<p>I've used the tried and true <a href="https://hackage.haskell.org/package/rio">RIO</a> <a href="https://github.com/lfborjas/freenatalchart.xyz">before</a>: I dig the very useful custom prelude it provides, even though these days I'm <em>partial</em> (get it) to <a href="https://kowainik.github.io/projects/relude"><code>relude</code></a>, and I believe the <a href="https://www.fpcomplete.com/blog/2017/06/readert-design-pattern/">ReaderT design pattern</a> is sensible and plenty for web applications. But, I am a dummy, and I like to make things harder for myself with a weird, too-new, option at least once in a personal project (I take the extremely conservative route every day at work: I'm happy to create a nightmare for myself, but never for colleagues!) After watching Alexis King's <a href="https://www.youtube.com/watch?v=0jI-AlWEwYI">legendary Effects for Less talk</a>, and having been acquainted with Purescript's &quot;effect row&quot; approach to specify <em>which</em> side effects a function may have (vs. the all-encompassing <code>IO</code>,) I decided to give an effects library a try. </p>
+<p>Polysemy was my first candidate, but the aforementioned talk and the <a href="https://reasonablypolymorphic.com/blog/mea-culpa/">mea culpa blog post</a> scared me away from it. Alexis' own <a href="https://hackage.haskell.org/package/freer-simple"><code>freer-simple</code></a> is probably the next best thing in terms of ease of use, but <a href="https://hackage.haskell.org/package/fused-effects"><code>fused-effects</code></a> with its promise of speed and the very excellent foundation
+in the (extremely approachable!) <a href="https://people.cs.kuleuven.be/%7Etom.schrijvers/Research/papers/mpc2015.pdf">Fused Effects paper</a> convinced me to give it a try. There's definitely quite a bit of ceremony, but I like
+the very explicit approach they take, both engineer-y and mathematically elegant. Ideally, we'll get <a href="https://github.com/hasura/eff">eff</a> in the near future! 
+<a href="https://github.com/arybczak/effectful"><code>effectful</code></a> also looks quite promising, but, just like <code>rel8</code>, it came out much later than the start of this project.</p>
+<p>Or maybe we <a href="https://%E5%96%B5.%E4%B8%96%E7%95%8C/2021/09/14/redundant-constraints/">don't need effects?</a></p>
+<p>Here's an example effect for some cryptography effects (helper functions omitted,) which lends itself
+to different carrier implementations for development or testing:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">Crypto</span><span style="color:#f8f8f2;"> (m </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">Type </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">Type</span><span style="color:#f8f8f2;">) k </span><span style="color:#ff79c6;">where
+  </span><span style="color:#6272a4;">-- | Given a password, return a hashed version
+  </span><span style="color:#bd93f9;">HashPasswordBCrypt </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">Password </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">Crypto</span><span style="color:#f8f8f2;"> m (</span><span style="color:#bd93f9;">PasswordHash BCrypt</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#6272a4;">-- | Given a map of custom claims, generate a signed JWS
+  -- with an iat claim.
+  </span><span style="color:#bd93f9;">SignJWT </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">CustomClaims </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">Crypto</span><span style="color:#f8f8f2;"> m </span><span style="color:#bd93f9;">JWS
+  GetRandomPassword </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">Crypto</span><span style="color:#f8f8f2;"> m </span><span style="color:#bd93f9;">Text
+
+</span><span style="color:#50fa7b;">hashPasswordBCrypt </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Has Crypto </span><span style="color:#ffffff;">sig m </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">Password </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">m</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">PasswordHash BCrypt</span><span style="color:#f8f8f2;">)
+hashPasswordBCrypt </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> send </span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">HashPasswordBCrypt
+
+</span><span style="color:#50fa7b;">signJWT </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Has Crypto </span><span style="color:#ffffff;">sig m </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">CustomClaims </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">m </span><span style="font-style:italic;color:#8be9fd;">JWS
+</span><span style="color:#f8f8f2;">signJWT </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> send </span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">SignJWT
+
+</span><span style="color:#50fa7b;">getRandomPassword  </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Has Crypto </span><span style="color:#ffffff;">sig m </span><span style="color:#ff79c6;">=&gt; </span><span style="color:#ffffff;">m </span><span style="font-style:italic;color:#8be9fd;">Text
+</span><span style="color:#f8f8f2;">getRandomPassword </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> send </span><span style="color:#bd93f9;">GetRandomPassword
+
+</span><span style="color:#6272a4;">-- Carriers
+</span><span style="color:#ff79c6;">newtype </span><span style="color:#bd93f9;">CryptoIOC</span><span style="color:#f8f8f2;"> m a </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">CryptoIOC</span><span style="color:#f8f8f2;"> {runCryptoIO </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">ReaderC Text</span><span style="color:#f8f8f2;"> m a}
+  </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> (</span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Applicative</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Functor</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Monad</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">MonadIO</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">MonadFail</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#50fa7b;">runCryptoWithSecret </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Text </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">CryptoIOC </span><span style="color:#ffffff;">m hs </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">m hs
+</span><span style="color:#f8f8f2;">runCryptoWithSecret secret </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> runReader secret </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> runCryptoIO
+
+</span><span style="color:#ff79c6;">instance
+</span><span style="color:#f8f8f2;">  (</span><span style="color:#bd93f9;">MonadIO</span><span style="color:#f8f8f2;"> m, </span><span style="color:#bd93f9;">Algebra</span><span style="color:#f8f8f2;"> sig m) </span><span style="color:#ff79c6;">=&gt;
+  </span><span style="color:#bd93f9;">Algebra</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Crypto </span><span style="color:#ff79c6;">:+:</span><span style="color:#f8f8f2;"> sig) (</span><span style="color:#bd93f9;">CryptoIOC</span><span style="color:#f8f8f2;"> m)
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  alg hdl sig ctx </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">CryptoIOC </span><span style="color:#ff79c6;">$ case</span><span style="color:#f8f8f2;"> sig </span><span style="color:#ff79c6;">of
+    </span><span style="color:#bd93f9;">L</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">HashPasswordBCrypt</span><span style="color:#f8f8f2;"> pw) </span><span style="color:#ff79c6;">-&gt; do
+</span><span style="color:#f8f8f2;">      (</span><span style="color:#ff79c6;">&lt;$</span><span style="color:#f8f8f2;"> ctx) </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> liftIO (hashPassword pw)
+    </span><span style="color:#bd93f9;">L</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">SignJWT</span><span style="color:#f8f8f2;"> claims&#39;) </span><span style="color:#ff79c6;">-&gt; do
+</span><span style="color:#f8f8f2;">      secret </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> ask
+      currentTime </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> liftIO getCurrentTime
+      </span><span style="color:#ff79c6;">let</span><span style="color:#f8f8f2;"> cs </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> mkJWTClaims currentTime claims&#39;
+          signer </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> hmacSecret secret
+          encoded </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> pure </span><span style="color:#ff79c6;">$ </span><span style="color:#bd93f9;">JWS </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> encodeSigned signer mempty cs
+      (</span><span style="color:#ff79c6;">&lt;$</span><span style="color:#f8f8f2;"> ctx) </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> encoded
+    </span><span style="color:#bd93f9;">L GetRandomPassword </span><span style="color:#ff79c6;">-&gt; do
+</span><span style="color:#f8f8f2;">      pw </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> liftIO generateRandomPassword
+      pure ((</span><span style="color:#ff79c6;">&lt;$</span><span style="color:#f8f8f2;"> ctx) pw)
+    </span><span style="color:#bd93f9;">R</span><span style="color:#f8f8f2;"> other </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> alg (runCryptoIO </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> hdl) (</span><span style="color:#bd93f9;">R</span><span style="color:#f8f8f2;"> other) ctx
+</span></code></pre>
+<p>(One can slice the above differently, maybe <code>Password</code> and <code>JWS</code> effects -- but in my usage they tend to happen
+together.)</p>
+<p><strong>Summary</strong> I'm happy with <code>fused-effects</code> in both projects I've worked on this year, but I'm sure <code>RIO</code>, a
+small transformers stack, or one of the friendlier, &quot;less powerful&quot; effect libraries such as <a href="https://github.com/arybczak/effectful"><code>effectful</code></a> 
+would be enough for a web app. This seems to be a rather mercurial area in the community right now, but I do believe there's something
+sensible in being explicit in separating the <em>how</em> and the <em>what</em> of the myriad side effects and app of this nature
+can have.</p>
+<h2 id="building-a-haskell-api-talking-to-the-database">Building a Haskell API: talking to the Database</h2>
+<p>I love Postgres, even more after reading the extremely good <a href="https://theartofpostgresql.com/">the Art of Postgress</a> book. I don't want an ORM that'll hide the DBMS from me: I'm not gonna move to a different one, and I quite enjoy writing SQL queries.
+At my day job and in another backend I wrote for a Tarot app that my wife created, I use Clojure's <a href="https://www.hugsql.org/"><code>hugsql</code></a>: you write the queries in a SQL file (you test them in <code>psql</code> with the <code>\i</code> or <code>\e</code> commands) and the library gives you functions that take maps and return vectors or maps. This is great except for the risks one takes at the interface: given that there's no types, you have to do map key bookkeeping yourself (we
+use Clojure's <a href="https://clojure.org/guides/spec"><code>spec</code></a> at work,) but I'm philosophically dissatisfied -- for someone with a very limited capacity to
+&quot;carry a bunch of ad-hoc types in my head&quot;: it's too little, too late (optional, runtime.)</p>
+<p>In the Haskell world, my first foray into some manner of database library was the <code>persistent</code>/<code>esqueleto</code> duet: I'm quite happy with them in a <a href="https://github.com/zrcadlo/undercurrent_api">little pilot API I built a couple of years ago</a>, but the template Haskell and agnosticism put me off: DB-agnosticism always means giving up some types, or some features, in Postgres, and that sucks. I wanted some type-safety and flexibility <em>throughout</em> my program, a bit less so at the very edge of the DB interface, without pretending the DBMS doesn't exist. </p>
+<p>At the beginning of the year, I read <a href="https://www.williamyaoh.com/posts/2019-12-14-typesafe-db-libraries.html">a blog post</a> comparing database libraries, and <a href="https://github.com/tomjaguarpaw/haskell-opaleye">Opaleye</a> emerged as the winner; I decided to try it, and it does have what I want, and not much more: a type-safe way to express a subset of my database into domain entities and queries. The going is, I'm not gonna lie, a bit rough: from how exactly to express keys as newtypes, what the heck Product Profunctors are and how I can use them to not repeat myself, to some interesting arcana like which Haskell type best corresponds to Postgres's <code>timestamptz</code> <a href="https://github.com/tomjaguarpaw/haskell-opaleye/issues/495#issuecomment-854056633">which led to me and Tom Ellis taking a deep dive into the matter</a>. I think I've gotten the hang of Opaleye at this point, but if I were to start anew (or have time for a biggish refactor,) I'd use the excellent <a href="https://hackage.haskell.org/package/rel8">rel8</a>, which is based on Opaleye but makes some decisions on usage on one's behalf (the <a href="https://www.youtube.com/watch?v=3uwrtjxiq6E">introductory talk</a> is fantastic, btw.)</p>
+<p>Opaleye or Rel8 have an appeal for projects that will have a ton of entities and queries, and as such need a uniform way of representing and maintaining the database bits, without much risk for &quot;clever&quot; ad-hoc one-offs. When I wrote the effect handler for the database layer, in addition to the Opaleye functions, I also gave myself a generic <code>query</code> effect to send &quot;raw SQL&quot; to the underlying library (<code>postgresql-simple</code>,) in fact, in my much smaller supporting project for autocompleting city names, I knew a little bit of raw SQL would outweigh maintaining the more cumbersome opaleye magic, so that's <a href="https://github.com/geocode-city/api/blob/a466540963b69e4d5ee46207bac984b07190c4ac/src/Effects/Database.hs">all I provided for that one</a>. </p>
+<p>For medium projects, I would very much consider <a href="https://github.com/tchoutri/pg-entity"><code>pg-entity</code></a>, which seems to also espouse my &quot;ORMS suck, Postgres is great&quot; ethos, in a much less product-profunctory package.</p>
+<p>Also, honorable mention of David Spivak's idea of <a href="https://www.youtube.com/watch?v=bk36__qkhrk">&quot;categorical databases&quot;</a>, which is the theoretical basis for Opaleye. His <a href="https://math.mit.edu/%7Edspivak/informatics/">work</a> on the subject is great, in fact, I greatly enjoyed the book he and Brendan Fong authored: <a href="https://arxiv.org/abs/1803.05316">&quot;Seven Sketches in Compositionality: an Invitation to Applied Category Theory&quot;</a> -- all the way until the very tricky last chapter on topoi, it's a beautiful and approachable introduction to the world of category theory!</p>
+<p>Here's some example code to e.g. define a <code>UserAccount</code> entity and a couple of queries -- the <code>Entity</code> bits are based on this <a href="https://github.com/dandoh/web-haskell-graphql-postgres-boilerplate/blob/e673e9ee07ce7a4dd9b023328038664e8fdfdd78/src/Database/Base.hs">excellent repo that examplifies Opaleye and Morpheus usage</a></p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">DefaultFromField SqlText</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">PasswordHash </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  defaultFromField </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">PasswordHash </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> defaultFromField
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">Default ToFields</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">PasswordHash </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Column SqlText</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  def </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> toToFields (</span><span style="color:#ff79c6;">\</span><span style="color:#f8f8f2;">(</span><span style="color:#bd93f9;">PasswordHash</span><span style="color:#f8f8f2;"> txt) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> sqlStrictText txt)
+
+</span><span style="color:#ff79c6;">newtype </span><span style="color:#bd93f9;">UserID</span><span style="color:#f8f8f2;">&#39; a </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">UserID</span><span style="color:#f8f8f2;"> a
+  </span><span style="color:#ff79c6;">deriving newtype</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Eq</span><span style="color:#f8f8f2;">, </span><span style="color:#bd93f9;">Show</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#ff79c6;">deriving </span><span style="color:#bd93f9;">Functor
+
+</span><span style="color:#ff79c6;">$(</span><span style="color:#f8f8f2;">makeAdaptorAndInstanceInferrable </span><span style="color:#f1fa8c;">&quot;pUserID&quot;</span><span style="color:#f8f8f2;"> &#39;&#39;</span><span style="color:#bd93f9;">UserID</span><span style="color:#f8f8f2;">&#39;)
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">UserIDField </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">UserID</span><span style="color:#f8f8f2;">&#39; (</span><span style="color:#bd93f9;">Field SqlInt8</span><span style="color:#f8f8f2;">)
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">UserIDWrite </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">UserID</span><span style="color:#f8f8f2;">&#39; (</span><span style="color:#bd93f9;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Field SqlInt8</span><span style="color:#f8f8f2;">))
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">UserID </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">UserID</span><span style="color:#f8f8f2;">&#39; </span><span style="color:#bd93f9;">Int64
+
+</span><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">UserAccount</span><span style="color:#f8f8f2;">&#39; uid uname uemail upw </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">UserAccount
+</span><span style="color:#f8f8f2;">    { userID </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> uid
+    , userName </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> uname
+    , userEmail </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> uemail
+    , userPasswordHash </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> upw
+    }
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">BCryptPasswordHash </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">PasswordHash BCrypt
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">UserAccount </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">Entity
+</span><span style="color:#f8f8f2;">    (</span><span style="color:#bd93f9;">UserAccount</span><span style="color:#f8f8f2;">&#39;
+      </span><span style="color:#bd93f9;">UserID
+</span><span style="color:#f8f8f2;">      (</span><span style="color:#bd93f9;">Maybe Text</span><span style="color:#f8f8f2;">)
+      (</span><span style="color:#bd93f9;">CI Text</span><span style="color:#f8f8f2;">)
+      </span><span style="color:#bd93f9;">BCryptPasswordHash</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">UserAccountWrite </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">EntityWriteField
+</span><span style="color:#f8f8f2;">    (</span><span style="color:#bd93f9;">UserAccount</span><span style="color:#f8f8f2;">&#39;
+      </span><span style="color:#bd93f9;">UserIDWrite
+</span><span style="color:#f8f8f2;">      (</span><span style="color:#bd93f9;">FieldNullable SqlText</span><span style="color:#f8f8f2;">)
+      (</span><span style="color:#bd93f9;">Field SqlCitext</span><span style="color:#f8f8f2;">)
+      (</span><span style="color:#bd93f9;">Field SqlText</span><span style="color:#f8f8f2;">))
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">UserAccountField </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">EntityField
+</span><span style="color:#f8f8f2;">    (</span><span style="color:#bd93f9;">UserAccount</span><span style="color:#f8f8f2;">&#39;
+      </span><span style="color:#bd93f9;">UserIDField
+</span><span style="color:#f8f8f2;">      (</span><span style="color:#bd93f9;">FieldNullable SqlText</span><span style="color:#f8f8f2;">)
+      (</span><span style="color:#bd93f9;">Field SqlCitext</span><span style="color:#f8f8f2;">)
+      (</span><span style="color:#bd93f9;">Field SqlText</span><span style="color:#f8f8f2;">))
+
+</span><span style="color:#ff79c6;">$(</span><span style="color:#f8f8f2;">makeAdaptorAndInstanceInferrable </span><span style="color:#f1fa8c;">&quot;pUserAccount&quot;</span><span style="color:#f8f8f2;"> &#39;&#39;</span><span style="color:#bd93f9;">UserAccount</span><span style="color:#f8f8f2;">&#39;)
+
+</span><span style="color:#50fa7b;">userAccountTable </span><span style="color:#ff79c6;">::
+  </span><span style="color:#bd93f9;">Table UserAccountWrite UserAccountField
+</span><span style="color:#f8f8f2;">userAccountTable </span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">  table </span><span style="color:#f1fa8c;">&quot;user_account&quot; </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> pEntity </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> withTimestampFields </span><span style="color:#ff79c6;">$
+</span><span style="color:#f8f8f2;">    pUserAccount
+      </span><span style="color:#bd93f9;">UserAccount
+</span><span style="color:#f8f8f2;">        { userID </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> pUserID (</span><span style="color:#bd93f9;">UserID </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> optionalTableField </span><span style="color:#f1fa8c;">&quot;id&quot;</span><span style="color:#f8f8f2;">)
+        , userName </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> tableField </span><span style="color:#f1fa8c;">&quot;name&quot;
+        </span><span style="color:#f8f8f2;">, userEmail </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> requiredTableField </span><span style="color:#f1fa8c;">&quot;email&quot;
+        </span><span style="color:#f8f8f2;">, userPasswordHash </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> requiredTableField </span><span style="color:#f1fa8c;">&quot;password_hash&quot;
+</span><span style="color:#f8f8f2;">        }
+
+</span><span style="color:#50fa7b;">newUser </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Maybe Text </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Text </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">BCryptPasswordHash </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Insert</span><span style="color:#f8f8f2;"> [(</span><span style="font-style:italic;color:#8be9fd;">UserID</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">Maybe Text</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">CI Text</span><span style="color:#f8f8f2;">)]
+newUser name email pwHash </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">Insert
+</span><span style="color:#f8f8f2;">    { iTable </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> userAccountTable
+    , iRows </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> withTimestamp [row]
+    , iReturning </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> rReturning (</span><span style="color:#ff79c6;">\</span><span style="color:#bd93f9;">Entity</span><span style="color:#f8f8f2;">{record} </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (userID record, userName record, userEmail record))
+    , iOnConflict </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Just DoNothing
+</span><span style="color:#f8f8f2;">    }
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    row </span><span style="color:#ff79c6;">=
+      </span><span style="color:#bd93f9;">UserAccount
+</span><span style="color:#f8f8f2;">        (</span><span style="color:#bd93f9;">UserID Nothing</span><span style="color:#f8f8f2;">)
+        (toFields name)
+        (toFields </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> mk </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> email)
+        (toFields pwHash)
+
+</span><span style="color:#6272a4;">-- | Get a user by email _including their password hash_
+</span><span style="color:#50fa7b;">userByEmailForLogin </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Text </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Select</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">UserIDField</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">FieldNullable SqlText</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">Field SqlCitext</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">Field SqlText</span><span style="color:#f8f8f2;">)
+userByEmailForLogin email </span><span style="color:#ff79c6;">= do
+  </span><span style="color:#bd93f9;">Entity</span><span style="color:#f8f8f2;">{record} </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> selectTable userAccountTable
+  where_ </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> userEmail record </span><span style="color:#ff79c6;">.===</span><span style="color:#f8f8f2;"> (toFields </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> mk </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> email)
+  pure (userID record , userName record , userEmail record, userPasswordHash record)
+
+</span></code></pre>
+<p><strong>Summary</strong> <code>Opaleye</code> is fearsome, but an elegant and clever foundation -- with the added bonus of having pushed me to finally read up on some category theory; <code>rel8</code> is likely the future. You probably can get by with <code>postgresql-simple</code> but try at least <code>pg-entity</code> to add some type safety without cruft. I admire <code>Persistent</code>/<code>Esqueleto</code>, but they remind me a bit too much of my Rails days of trying to fight the ORM to have it do what I <em>know</em> Postgres is capable of doing.</p>
+<h2 id="building-a-haskell-api-repeatable-development-and-deployment">Building a Haskell API: repeatable development, and deployment.</h2>
+<p>Deploying Haskell is tough: for my projects, I use Heroku's <a href="https://devcenter.heroku.com/articles/container-registry-and-runtime">container support</a>. At first, I would build the Docker image locally and push it to Heroku. 
+As dependencies grow, one has to get clever with build stages, the intricacies of Haskell's <code>stack</code> or <code>cabal</code>, and sometimes, just bite the bullet and wait for an hour or so while a transitive dependency on <code>lens</code> makes you realize that trying to push a tiny typo fix to some html template wasn't really worth it after all. I still use
+a good ol' <code>Dockerfile</code> in <a href="https://github.com/lfborjas/freenatalchart.xyz">my oldest Haskell deployment</a>, but for the newer projects, I've been using <code>nix</code> to make both development and deployment less painful.</p>
+<p>Again, just like with <code>Opaleye</code>, with power comes suffering. It took me quite some time to land at a derivation that worked both for development and deployment, as well as realizing one can use github actions to do the building
+and pushing on one's behalf (negating the need for having Docker eat all your RAM, or having a virtualized linux
+to build outside of Docker.) I owe much to <a href="https://github.com/Gabriel439/haskell-nix">Gabriella Gonzalez's tutorial</a>, this <a href="https://github.com/fghibellini/nix-haskell-monorepo">monorepo</a> tutorial, and <a href="https://jade.fyi/blog/nix-and-haskell/">this blog post that tied everything together</a>. I believe I still have a ways to go towards Nix mastery, and I'm excited for flakes to simplify things, but I've already reaped quite a few benefits: much smaller docker images uploaded to Heroku, vastly shorter build times (from over an hour to ten minutes,) and the development boons such as the ability to work on WIP versions of libraries (for example, <a href="https://github.com/natal-chart/laboratorium/blob/6af2a8a5e33b0147048e48c79392e340cb70e6b6/nix/extra-pkgs/swiss-ephemeris.nix">here, in my lab repo</a>, I worked with a not-yet-published version of my C bindings to Swiss Ephemeris) or the ability to start working on any computer (that has the internet and the disk to bear the heavy Nix crown.)</p>
+<p>Here's the <code>docker.nix</code> I have for <a href="https://github.com/geocode-city/api/blob/a466540963b69e4d5ee46207bac984b07190c4ac/nix/docker.nix">one of my projects</a> to build a small, <code>alpine</code> based image for deployment:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#f8f8f2;">{ </span><span style="font-style:italic;color:#ffb86c;">pkgs </span><span style="color:#ff79c6;">? </span><span style="color:#8be9fd;">import </span><span style="color:#f1fa8c;">./packages.nix </span><span style="color:#f8f8f2;">{ </span><span style="color:#50fa7b;">system </span><span style="color:#ff79c6;">= </span><span style="color:#f1fa8c;">&quot;x86_64-linux&quot;</span><span style="color:#f8f8f2;">; } }:
+
+</span><span style="color:#ff79c6;">let
+  </span><span style="color:#50fa7b;">bin </span><span style="color:#ff79c6;">= </span><span style="color:#f8f8f2;">(</span><span style="font-style:italic;color:#ffb86c;">pkgs</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">haskell</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">lib</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">justStaticExecutables pkgs</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">haskellPackages</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">geocode-city-api</span><span style="color:#f8f8f2;">);
+  </span><span style="color:#50fa7b;">migrations </span><span style="color:#ff79c6;">= </span><span style="color:#f1fa8c;">../migrations</span><span style="color:#f8f8f2;">;
+</span><span style="color:#ff79c6;">in
+
+</span><span style="color:#6272a4;"># This is the nix api to build images
+</span><span style="font-style:italic;color:#ffb86c;">pkgs</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">dockerTools</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">buildImage </span><span style="color:#f8f8f2;">{
+  </span><span style="color:#6272a4;"># our image name
+  </span><span style="color:#50fa7b;">name </span><span style="color:#ff79c6;">= </span><span style="color:#f1fa8c;">&quot;geocode-city-api&quot;</span><span style="color:#f8f8f2;">;
+  </span><span style="color:#6272a4;"># our image tag
+  </span><span style="color:#50fa7b;">tag </span><span style="color:#ff79c6;">= </span><span style="color:#f1fa8c;">&quot;latest&quot;</span><span style="color:#f8f8f2;">;
+  
+  </span><span style="color:#6272a4;"># this is a list of the things we want to include
+  # in the image. it&#39;s incredibly bare by default.
+  </span><span style="color:#50fa7b;">contents </span><span style="color:#ff79c6;">= </span><span style="color:#f8f8f2;">[
+    </span><span style="font-style:italic;color:#ffb86c;">bin </span><span style="color:#6272a4;"># our app
+  </span><span style="color:#f8f8f2;">];
+  </span><span style="color:#50fa7b;">fromImage </span><span style="color:#ff79c6;">= </span><span style="font-style:italic;color:#ffb86c;">pkgs</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">dockerTools</span><span style="color:#ff79c6;">.</span><span style="font-style:italic;color:#ffb86c;">pullImage </span><span style="color:#f8f8f2;">{
+    </span><span style="color:#50fa7b;">imageName </span><span style="color:#ff79c6;">= </span><span style="color:#f1fa8c;">&quot;alpine&quot;</span><span style="color:#f8f8f2;">;
+    </span><span style="color:#50fa7b;">imageDigest </span><span style="color:#ff79c6;">= </span><span style="color:#f1fa8c;">&quot;sha256:e1871801d30885a610511c867de0d6baca7ed4e6a2573d506bbec7fd3b03873f&quot;</span><span style="color:#f8f8f2;">;
+    </span><span style="color:#50fa7b;">sha256 </span><span style="color:#ff79c6;">= </span><span style="color:#f1fa8c;">&quot;0ymhp3hrhpf7425n3awz6b67510x9xcgpldi4xm610aqfk1rygy9&quot;</span><span style="color:#f8f8f2;">;
+  };
+  </span><span style="color:#50fa7b;">extraCommands </span><span style="color:#ff79c6;">= </span><span style="color:#f1fa8c;">&#39;&#39;
+    cp -rf </span><span style="font-style:italic;color:#ff79c6;">${</span><span style="font-style:italic;color:#ffb86c;">migrations</span><span style="font-style:italic;color:#ff79c6;">}</span><span style="color:#f1fa8c;"> migrations
+  &#39;&#39;</span><span style="color:#f8f8f2;">;
+
+  </span><span style="color:#6272a4;"># This exposes the Dockerfile commands you might be familiar with
+  </span><span style="color:#50fa7b;">config </span><span style="color:#ff79c6;">= </span><span style="color:#f8f8f2;">{
+    </span><span style="color:#50fa7b;">Cmd </span><span style="color:#ff79c6;">= </span><span style="color:#f8f8f2;">[ </span><span style="color:#f1fa8c;">&quot;</span><span style="font-style:italic;color:#ff79c6;">${</span><span style="font-style:italic;color:#ffb86c;">bin</span><span style="font-style:italic;color:#ff79c6;">}</span><span style="color:#f1fa8c;">/bin/geocode-city-api-exe&quot; </span><span style="color:#f8f8f2;">];
+    </span><span style="color:#50fa7b;">Env </span><span style="color:#ff79c6;">= </span><span style="color:#f8f8f2;">[ 
+      </span><span style="color:#f1fa8c;">&quot;DEPLOY_ENV=Production&quot;
+    </span><span style="color:#f8f8f2;">];
+  };
+}
+</span></code></pre>
+<p>Alongside this Github action to deploy it:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">name</span><span style="color:#f8f8f2;">: </span><span style="color:#f1fa8c;">&quot;Build and Release to Heroku&quot;
+</span><span style="color:#bd93f9;">on</span><span style="color:#f8f8f2;">:
+  </span><span style="color:#ff79c6;">push</span><span style="color:#f8f8f2;">:
+    </span><span style="color:#ff79c6;">branches</span><span style="color:#f8f8f2;">: [ </span><span style="color:#f1fa8c;">main </span><span style="color:#f8f8f2;">]
+</span><span style="color:#ff79c6;">jobs</span><span style="color:#f8f8f2;">:
+  </span><span style="color:#ff79c6;">build</span><span style="color:#f8f8f2;">:
+    </span><span style="color:#ff79c6;">runs-on</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">ubuntu-latest
+    steps</span><span style="color:#f8f8f2;">:
+    - </span><span style="color:#ff79c6;">uses</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">actions/checkout@v2.3.4
+    </span><span style="color:#f8f8f2;">- </span><span style="color:#ff79c6;">uses</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">cachix/install-nix-action@v13
+      with</span><span style="color:#f8f8f2;">:
+        </span><span style="color:#ff79c6;">nix_path</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">nixpkgs=channel:nixos-unstable
+    </span><span style="color:#f8f8f2;">- </span><span style="color:#ff79c6;">name</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">Login to Heroku Container Registry
+      env</span><span style="color:#f8f8f2;">:
+        </span><span style="color:#ff79c6;">HEROKU_API_KEY</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">${{ secrets.HEROKU_API_KEY }}
+      run</span><span style="color:#f8f8f2;">:
+        </span><span style="color:#ff79c6;">heroku container:login
+    </span><span style="color:#f8f8f2;">- </span><span style="color:#ff79c6;">name</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">Build with nix and load into docker 
+      run</span><span style="color:#f8f8f2;">: 
+        </span><span style="color:#ff79c6;">docker load &lt; $(nix-build ./nix/docker.nix)
+    </span><span style="color:#f8f8f2;">- </span><span style="color:#ff79c6;">name</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">Push to container Registry
+      env</span><span style="color:#f8f8f2;">:
+        </span><span style="color:#ff79c6;">HEROKU_API_KEY</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">${{ secrets.HEROKU_API_KEY }}
+      run</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">|
+</span><span style="color:#f1fa8c;">        docker tag geocode-city-api:latest registry.heroku.com/geocode-city/web
+        docker push registry.heroku.com/geocode-city/web
+    </span><span style="color:#f8f8f2;">- </span><span style="color:#ff79c6;">name</span><span style="color:#f8f8f2;">:  </span><span style="color:#ff79c6;">Release
+      env</span><span style="color:#f8f8f2;">:
+        </span><span style="color:#ff79c6;">HEROKU_API_KEY</span><span style="color:#f8f8f2;">: </span><span style="color:#ff79c6;">${{ secrets.HEROKU_API_KEY }}
+      run</span><span style="color:#f8f8f2;">:
+        </span><span style="color:#f1fa8c;">heroku container:release web -a geocode-city
+</span></code></pre>
+<p><strong>Summary</strong> Deploying Haskell can take a lot of time and more operations knowledge than the average developer probably knows to know, but Docker and Nix are a match made in... the cloud? I'm sorry.</p>
+<h1 id="story-2-building-a-haskell-library">Story 2: Building a Haskell library</h1>
+<h2 id="building-a-haskell-library-of-c-memory-corruption-and-type-level-programming">Building a Haskell library: of C, memory corruption, and type-level programming.</h2>
+<p>In order to calculate <em>ephemeris</em> (positions of planets at a given date, and miscellanea such as house cusps
+for a given geographical location,) the golden standard is <a href="https://www.astro.com/swisseph/swephinfo_e.htm">Swiss Ephemeris</a> a C library built by a couple of very hardcore, and very generous, C programmers who also run <a href="https://astro.com">astro.com</a>. Being able to access this battle-tested library through a higher-level library was the motivation for my authoring my own <a href="https://github.com/lfborjas/swiss-ephemeris">C bindings to Swiss Ephemeris</a>. At first, the task was rather perfunctory, albeit daunting: figure out how to import C headers into Haskell, write low-level signatures to send and receive C values, slap some simple -- but more expressive -- types on top: a few enumerations via Product types, a few &quot;composite&quot; types via Product (record, tuple) types, a lot of <code>IO (Either String x)</code>. </p>
+<p>For the app we're building, however, I needed to go a bit deeper: I needed to tweak some C to interface with an unofficial feature in <code>sweph</code> that can write &quot;precalculated&quot; ephemeris files into a rather optimized custom binary format, and read them in a memory efficient manner -- perfect for examining long intervals of time for transits or other events. Interfacing with <em>that</em> meant coming to terms with the fact that Swiss Ephemeris converses in both &quot;Ephemeris&quot; (terrestrial) time, and Universal Time, and even though <em>they</em> express them as a simple <code>double</code>, these are not values one wants to mix up. I originally had a humble newtype, without distinction between either time standard, because I only used one. To support &quot;terrestrial time&quot; as dictated by the existing code for precalculated ephemeris, I ended up doing a large (and painless, thanks Haskell!) refactor, engaging singletons and phantom types to make a <code>newtype</code> more typesafe, as well as <em>leveraging</em> these singleton witnesses at runtime to choose which Swiss Ephemeris function to use. That led to a more sophisticated type than I originally had, here's a nugget:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | Various standards for measuring time that can be expressed as
+-- Julian Days.
+</span><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">TimeStandard
+  </span><span style="color:#ff79c6;">= </span><span style="color:#6272a4;">-- | Terrestrial Time (successor to Ephemeris Time)
+    </span><span style="color:#bd93f9;">TT
+  </span><span style="color:#ff79c6;">| </span><span style="color:#6272a4;">-- | Universal Time, explicitly in its @UT1@ form.
+    </span><span style="color:#bd93f9;">UT1
+  </span><span style="color:#ff79c6;">| </span><span style="color:#6272a4;">-- | Universal Time, in any of its forms; depending
+    -- on how it was constructed (in most cases, UTC)
+    </span><span style="color:#bd93f9;">UT
+  </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> (</span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Eq</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Show</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#6272a4;">----------------------------------------------------------
+--- SINGLETONS
+-- thanks to: https://blog.jle.im/entry/introduction-to-singletons-1.html
+-- if this gets more use, consider using the &#39;singletons&#39; package:
+-- https://hackage.haskell.org/package/singletons-3.0
+----------------------------------------------------------
+-- | Singletons for pseudo-dependent type programming with
+-- time standards. 
+</span><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">SingTimeStandard </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">TimeStandard </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">Type </span><span style="color:#ff79c6;">where
+  </span><span style="color:#bd93f9;">STT </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">SingTimeStandard</span><span style="color:#f8f8f2;"> &#39;</span><span style="color:#bd93f9;">TT
+  SUT1 </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">SingTimeStandard</span><span style="color:#f8f8f2;"> &#39;</span><span style="color:#bd93f9;">UT1
+  SUT </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">SingTimeStandard</span><span style="color:#f8f8f2;"> &#39;</span><span style="color:#bd93f9;">UT
+  
+</span><span style="color:#6272a4;">-- | Typeclass to recover the singleton for a given time standard
+</span><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">SingTSI </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">singTS </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">SingTimeStandard </span><span style="color:#ffffff;">a 
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">SingTSI</span><span style="color:#f8f8f2;"> &#39;</span><span style="font-style:italic;color:#8be9fd;">TT </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  singTS </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">STT
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">SingTSI</span><span style="color:#f8f8f2;"> &#39;</span><span style="font-style:italic;color:#8be9fd;">UT1 </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  singTS </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">SUT1
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">SingTSI</span><span style="color:#f8f8f2;"> &#39;</span><span style="font-style:italic;color:#8be9fd;">UT </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  singTS </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">SUT
+ 
+</span><span style="color:#6272a4;">-- | A @JulianDay@ can have different provenances, witnessed
+-- by its accompanying phantom type:
+--
+-- * It could&#39;ve been converted, purely, from a UTC value,
+--   as such, its witness is &#39;UT&#39;
+-- * It could&#39;be been produced by consulting tidal/leap second
+--   information, as done by the Swiss Ephemeris library,
+--   in which case it&#39;s &#39;TT&#39; (aka, somewhat wrongly, as Ephemeris
+--   time,) or &#39;UT1&#39;.
+</span><span style="color:#ff79c6;">newtype </span><span style="color:#bd93f9;">JulianDay</span><span style="color:#f8f8f2;"> (s </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">TimeStandard</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">MkJulianDay</span><span style="color:#f8f8f2;"> {
+                                          </span><span style="color:#6272a4;">-- | Get the underlying &#39;Double&#39; in 
+                                          -- a &#39;JulianDay&#39;. We intentionally do /not/
+                                          -- export a way to finagle a &#39;Double&#39; into a
+                                          -- &#39;JulianDay&#39;: you&#39;ll have to obtain it
+                                          -- through the various temporal conversion functions.
+                                          </span><span style="color:#50fa7b;">getJulianDay </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Double</span><span style="color:#f8f8f2;">}
+  </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> (</span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Eq</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Show</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Enum</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Ord</span><span style="color:#f8f8f2;">)
+</span></code></pre>
+<p>Which allows us to write neat typeclasses such as:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | Conversion from a &#39;JulianDay&#39; in the &#39;TimeStandard&#39;
+-- @jd@ to a temporal value of type @to@
+-- It&#39;s bound to IO since historical data may need to be consulted;
+-- however, as per the underlying library, it /cannot/ fail.
+</span><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">FromJulianDay </span><span style="color:#ffffff;">jd to </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">fromJulianDay </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">JulianDay </span><span style="color:#ffffff;">jd </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">IO </span><span style="color:#ffffff;">to
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">FromJulianDay</span><span style="color:#f8f8f2;"> &#39;</span><span style="font-style:italic;color:#8be9fd;">UT UTCTime </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  fromJulianDay </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> pure </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> julianDayUTToUTC
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">FromJulianDay</span><span style="color:#f8f8f2;"> &#39;</span><span style="font-style:italic;color:#8be9fd;">UT1 UTCTime </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  fromJulianDay </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> julianUT1ToUTC
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">FromJulianDay</span><span style="color:#f8f8f2;"> &#39;</span><span style="font-style:italic;color:#8be9fd;">TT UTCTime </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  fromJulianDay </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> julianTTToUTC
+</span></code></pre>
+<p>Note that I'm not using the <a href="https://hackage.haskell.org/package/singletons-3.0"><code>singletons</code></a> package there just yet, mostly because I'm stingy with which dependencies to bring into a library (everyone's invited to an app, though!) While we're here, <a href="https://dl.acm.org/doi/10.1145/2364506.2364522">read the paper, it's pretty darn good</a>.</p>
+<p>The real magic is in being able to use a singleton to decide which function to invoke, here's an incomplete excerpt (one can dispense with the extra functions and just write the one that is eventually exported, <code>sunCrossing</code>, but I like to split these things
+into painfully obvious chunks for the benefit of my future, dumber self):</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">sunCrossingOpt
+  </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">SingTSI </span><span style="color:#ffffff;">ts
+  </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">CalcFlag
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Double
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">JulianDay </span><span style="color:#ffffff;">ts
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">IO</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Either String</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">JulianDay </span><span style="color:#ffffff;">ts</span><span style="color:#f8f8f2;">))
+sunCrossingOpt </span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">  sunCrossingOpt&#39; singTS
+
+</span><span style="color:#50fa7b;">sunCrossingOpt&#39;
+  </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">SingTimeStandard </span><span style="color:#ffffff;">ts
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">CalcFlag
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">Double
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">JulianDay</span><span style="color:#f8f8f2;"> ts
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">IO</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Either String</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">JulianDay</span><span style="color:#f8f8f2;"> ts))
+sunCrossingOpt&#39; sing iflag ln jd </span><span style="color:#ff79c6;">=
+  let</span><span style="color:#f8f8f2;"> fn </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">CDouble </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">CDouble </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">CalcFlag </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">CString </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">IO CDouble
+</span><span style="color:#f8f8f2;">      fn </span><span style="color:#ff79c6;">= case</span><span style="color:#f8f8f2;"> sing </span><span style="color:#ff79c6;">of
+        </span><span style="color:#6272a4;">-- raw C interface functions
+        </span><span style="color:#bd93f9;">STT </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> c_swe_solcross 
+        _   </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> c_swe_solcross_ut
+      doubleJD </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> jd2C jd
+  </span><span style="color:#ff79c6;">in</span><span style="color:#f8f8f2;"> allocaErrorMessage </span><span style="color:#ff79c6;">$ \</span><span style="color:#f8f8f2;">serr </span><span style="color:#ff79c6;">-&gt; do
+</span><span style="color:#f8f8f2;">    nextCrossing </span><span style="color:#ff79c6;">&lt;-
+</span><span style="color:#f8f8f2;">      fn
+        (realToFrac ln)
+        doubleJD
+        iflag
+        serr
+    </span><span style="color:#ff79c6;">if |</span><span style="color:#f8f8f2;"> nextCrossing </span><span style="color:#ff79c6;">&lt;</span><span style="color:#f8f8f2;"> doubleJD &amp;&amp; serr </span><span style="color:#ff79c6;">/=</span><span style="color:#f8f8f2;"> nullPtr </span><span style="color:#ff79c6;">-&gt;
+        </span><span style="color:#bd93f9;">Left </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> peekCAString serr
+       </span><span style="color:#ff79c6;">|</span><span style="color:#f8f8f2;"> nextCrossing </span><span style="color:#ff79c6;">&lt;</span><span style="color:#f8f8f2;"> doubleJD </span><span style="color:#ff79c6;">-&gt;
+</span><span style="color:#f8f8f2;">        pure </span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Left </span><span style="color:#ff79c6;">$ </span><span style="color:#f1fa8c;">&quot;No crossing found in the future.&quot;
+       </span><span style="color:#ff79c6;">|</span><span style="color:#f8f8f2;"> otherwise </span><span style="color:#ff79c6;">-&gt;
+</span><span style="color:#f8f8f2;">        pure </span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Right </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> mkJulianDay sing (realToFrac nextCrossing)
+
+</span><span style="color:#6272a4;">-- | Given an ecliptic longitude, and &#39;JulianDay&#39; after which to search
+-- try to find the next future date when the Sun will be crossing the
+-- given longitude exactly (with a precision of 1 milliarcsecond,)
+-- from a geocentric perspective.
+</span><span style="color:#50fa7b;">sunCrossing </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">SingTSI </span><span style="color:#ffffff;">ts
+ </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">Double
+ </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">JulianDay </span><span style="color:#ffffff;">ts
+ </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">IO</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Either String</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">JulianDay </span><span style="color:#ffffff;">ts</span><span style="color:#f8f8f2;">))
+sunCrossing </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> sunCrossingOpt (mkCalculationOptions defaultCalculationOptions)
+</span></code></pre>
+<p>Singletons and phantom types aside, I'm not an expert C programmer, so even though I just took code from the swiss ephemeris source and forum and edited to play nice with environment variables and multithreading, I still managed to run into some memory corruption issues. Thankfully, the test suite for my library uses <code>QuickSpec</code> to really make the code suffer with a wide range of random inputs, and <code>HSpec</code>'s ability to have repeatable tests allowed me to zero in on either logical edge cases, or bad pointers to fix (I owe much to <code>valgrind</code> when helping actually track down where the memory corruption was happening!) See my <a href="https://github.com/lfborjas/swiss-ephemeris/blob/master/NOTES.md">notes in the repo</a> for more. </p>
+<p>In fact, noodling around these timid extensions to Swiss Ephemeris allowed me to write some <a href="https://github.com/lfborjas/swiss-ephemeris/blob/169e3dfae41713e241d9cdba593e1a5dfde491ca/csrc/interpolate.c">original code</a> to offer the ability to find exact moments of crossing or moon phases using numerical root finding, directly in C!</p>
+<p>All these toils and travails resulted in probably <a href="https://github.com/lfborjas/swiss-ephemeris/pull/37">the biggest PR I've put together for a non-work repo</a>. All because I wanted the ability to see if we had a full moon coming up, or a fun (?) Mars square Moon.</p>
+<p><em><strong>Summary</strong></em> C is fun until you get a <code>stackoverflow</code>, fear not the fancier types in Haskell if they'll lead to type-safer code.</p>
+<h2 id="building-a-haskell-library-experiments-streaming-the-beauty-of-monoids">Building a Haskell library: experiments, streaming, the beauty of Monoids.</h2>
+<p>This section covers a repository that I'm in the midst of turning into a library, currently it's a <a href="https://github.com/natal-chart/laboratorium">little CLI suite that produces some neat charts and text reports</a></p>
+<p>All of the above was simply the foundation for further code: I wanted to be able to, in one pass and with somewhat constant memory usage (I use the cheapo servers!), obtain the ephemeris for, say, a full month, and see if there's any planetary ingresses into a zodiac segment, changes of direction (direct to retrograde, and vice-versa,) as well as moon phases, transits and eclipses. Reading a lot of Haskell blog posts (in particular <a href="https://github.com/Gabriel439/slides/blob/main/munihac/foldmap.md">this presentation by Gabriella Gonzalez</a>,) I knew that this would be possible, but one had to align the types just right. One interesting challenge is that, as one encounters events such as transits, they may &quot;happen&quot; over multiple days, and it'd be neat to &quot;merge&quot; them into one event vs. multiple contiguous copies of the same event. After much experimentation, I ended up with types that look like this:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Merge </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">merge </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">MergeStrategy </span><span style="color:#ffffff;">a
+
+</span><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">MergeStrategy</span><span style="color:#f8f8f2;"> a
+  </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">ReplaceBoth</span><span style="color:#f8f8f2;"> a a
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">ReplaceL</span><span style="color:#f8f8f2;"> a
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">ReplaceR</span><span style="color:#f8f8f2;"> a
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">Merge</span><span style="color:#f8f8f2;"> a
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">KeepBoth
+  </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> (</span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Eq</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Show</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">Functor MergeStrategy </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  fmap alpha (</span><span style="color:#bd93f9;">ReplaceBoth</span><span style="color:#f8f8f2;"> x y) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">ReplaceBoth</span><span style="color:#f8f8f2;"> (alpha x) (alpha y)
+  fmap alpha (</span><span style="color:#bd93f9;">ReplaceL</span><span style="color:#f8f8f2;"> x)      </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">ReplaceL</span><span style="color:#f8f8f2;"> (alpha x)
+  fmap alpha (</span><span style="color:#bd93f9;">ReplaceR</span><span style="color:#f8f8f2;"> y)      </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">ReplaceR</span><span style="color:#f8f8f2;"> (alpha y)
+  fmap alpha (</span><span style="color:#bd93f9;">Merge</span><span style="color:#f8f8f2;">    z)      </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Merge</span><span style="color:#f8f8f2;">    (alpha z)
+  fmap _     </span><span style="color:#bd93f9;">KeepBoth          </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">KeepBoth
+
+</span><span style="color:#ff79c6;">newtype </span><span style="color:#bd93f9;">MergeSeq</span><span style="color:#f8f8f2;"> a </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">MergeSeq</span><span style="color:#f8f8f2;"> {getMerged </span><span style="color:#ff79c6;">:: </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#bd93f9;">Seq</span><span style="color:#f8f8f2;"> a}
+  </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> stock (</span><span style="color:#bd93f9;">Show</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#ff79c6;">deriving </span><span style="color:#bd93f9;">Foldable</span><span style="color:#f8f8f2;"> via </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#bd93f9;">Seq
+
+</span><span style="color:#50fa7b;">singleton </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">MergeSeq </span><span style="color:#ffffff;">a
+</span><span style="color:#f8f8f2;">singleton </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">MergeSeq </span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">singleton
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">Merge </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">Semigroup</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">MergeSeq </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  (</span><span style="color:#bd93f9;">MergeSeq</span><span style="color:#f8f8f2;"> s1) </span><span style="color:#ff79c6;">&lt;&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">MergeSeq</span><span style="color:#f8f8f2;"> s2) </span><span style="color:#ff79c6;">=
+    </span><span style="color:#bd93f9;">MergeSeq </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> doMerge s1Last s2First
+    </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">      s1Last  </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">viewr s1
+      s2First </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">viewl s2
+      doMerge </span><span style="color:#bd93f9;">EmptyR EmptyL    </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> mempty
+      doMerge </span><span style="color:#bd93f9;">EmptyR</span><span style="color:#f8f8f2;"> (x </span><span style="color:#ff79c6;">:&lt;</span><span style="color:#f8f8f2;"> xs) </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> x </span><span style="color:#ff79c6;">&lt;|</span><span style="color:#f8f8f2;"> xs
+      doMerge (xs </span><span style="color:#ff79c6;">:&gt;</span><span style="color:#f8f8f2;"> x) </span><span style="color:#bd93f9;">EmptyL </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> xs </span><span style="color:#ff79c6;">|&gt;</span><span style="color:#f8f8f2;"> x
+      doMerge (xs </span><span style="color:#ff79c6;">:&gt;</span><span style="color:#f8f8f2;"> x) (y </span><span style="color:#ff79c6;">:&lt;</span><span style="color:#f8f8f2;"> ys) </span><span style="color:#ff79c6;">=
+        case</span><span style="color:#f8f8f2;"> merge x y </span><span style="color:#ff79c6;">of
+          </span><span style="color:#bd93f9;">ReplaceBoth</span><span style="color:#f8f8f2;"> a b </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (xs </span><span style="color:#ff79c6;">|&gt;</span><span style="color:#f8f8f2;"> a) </span><span style="color:#ff79c6;">&gt;&lt;</span><span style="color:#f8f8f2;"> (b </span><span style="color:#ff79c6;">&lt;|</span><span style="color:#f8f8f2;"> ys)
+          </span><span style="color:#bd93f9;">Merge</span><span style="color:#f8f8f2;">       a   </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (xs </span><span style="color:#ff79c6;">|&gt;</span><span style="color:#f8f8f2;"> a) </span><span style="color:#ff79c6;">&gt;&lt;</span><span style="color:#f8f8f2;"> ys
+          </span><span style="color:#bd93f9;">ReplaceL</span><span style="color:#f8f8f2;">    a   </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (xs </span><span style="color:#ff79c6;">|&gt;</span><span style="color:#f8f8f2;"> a) </span><span style="color:#ff79c6;">&gt;&lt;</span><span style="color:#f8f8f2;"> (y </span><span style="color:#ff79c6;">&lt;|</span><span style="color:#f8f8f2;"> ys)
+          </span><span style="color:#bd93f9;">ReplaceR</span><span style="color:#f8f8f2;">      b </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (xs </span><span style="color:#ff79c6;">|&gt;</span><span style="color:#f8f8f2;"> x) </span><span style="color:#ff79c6;">&gt;&lt;</span><span style="color:#f8f8f2;"> (b </span><span style="color:#ff79c6;">&lt;|</span><span style="color:#f8f8f2;"> ys)
+          </span><span style="color:#bd93f9;">KeepBoth        </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (xs </span><span style="color:#ff79c6;">|&gt;</span><span style="color:#f8f8f2;"> x) </span><span style="color:#ff79c6;">&gt;&lt;</span><span style="color:#f8f8f2;"> (y </span><span style="color:#ff79c6;">&lt;|</span><span style="color:#f8f8f2;"> ys)
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">Merge </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">Monoid</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">MergeSeq </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  mempty </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">MergeSeq</span><span style="color:#f8f8f2;"> mempty
+</span></code></pre>
+<p>So one can write, for example (some code omitted, see the repo for full details):</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">Event
+  </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">DirectionChange  PlanetStation
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">ZodiacIngress</span><span style="color:#f8f8f2;">    (</span><span style="color:#bd93f9;">Crossing Zodiac</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">HouseIngress</span><span style="color:#f8f8f2;">     (</span><span style="color:#bd93f9;">Crossing House</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">PlanetaryTransit</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Transit Planet</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">HouseTransit</span><span style="color:#f8f8f2;">     (</span><span style="color:#bd93f9;">Transit House</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">LunarPhaseChange LunarPhase
+  </span><span style="color:#ff79c6;">| </span><span style="color:#bd93f9;">EclipseMaximum   Eclipse
+
+</span><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">LunarPhase </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">LunarPhase
+</span><span style="color:#f8f8f2;">  { lunarPhaseName </span><span style="color:#ff79c6;">:: !</span><span style="color:#bd93f9;">LunarPhaseName
+  </span><span style="color:#f8f8f2;">, lunarPhaseStarts </span><span style="color:#ff79c6;">:: !</span><span style="color:#bd93f9;">JulianDayTT
+  </span><span style="color:#f8f8f2;">, lunarPhaseEnds </span><span style="color:#ff79c6;">:: !</span><span style="color:#bd93f9;">JulianDayTT
+</span><span style="color:#f8f8f2;">  } </span><span style="color:#ff79c6;">deriving</span><span style="color:#f8f8f2;"> (</span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Eq</span><span style="color:#f8f8f2;">, </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Show</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">Merge LunarPhase </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  x </span><span style="color:#ff79c6;">`merge`</span><span style="color:#f8f8f2;"> y </span><span style="color:#ff79c6;">=
+    if</span><span style="color:#f8f8f2;"> lunarPhaseName x </span><span style="color:#ff79c6;">==</span><span style="color:#f8f8f2;"> lunarPhaseName y </span><span style="color:#ff79c6;">then
+      </span><span style="color:#bd93f9;">Merge</span><span style="color:#f8f8f2;"> merged
+    </span><span style="color:#ff79c6;">else
+      </span><span style="color:#bd93f9;">KeepBoth
+    </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">      merged </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> x {
+        lunarPhaseEnds </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> lunarPhaseEnds y
+      }
+
+</span><span style="color:#50fa7b;">mapLunarPhases </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Seq</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Ephemeris Double</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">MergeSeq Event
+</span><span style="color:#f8f8f2;">mapLunarPhases (day1 </span><span style="color:#ff79c6;">:&lt;|</span><span style="color:#f8f8f2;"> day2 </span><span style="color:#ff79c6;">:&lt;|</span><span style="color:#f8f8f2;"> _) </span><span style="color:#ff79c6;">=
+  let</span><span style="color:#f8f8f2;"> sun1  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> day1 </span><span style="color:#ff79c6;">`forPlanet` </span><span style="color:#bd93f9;">Sun
+</span><span style="color:#f8f8f2;">      sun2  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> day2 </span><span style="color:#ff79c6;">`forPlanet` </span><span style="color:#bd93f9;">Sun
+</span><span style="color:#f8f8f2;">      moon1 </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> day1 </span><span style="color:#ff79c6;">`forPlanet` </span><span style="color:#bd93f9;">Moon
+</span><span style="color:#f8f8f2;">      moon2 </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> day2 </span><span style="color:#ff79c6;">`forPlanet` </span><span style="color:#bd93f9;">Moon
+</span><span style="color:#f8f8f2;">      sunPos </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> liftA2 </span><span style="color:#50fa7b;">(,)</span><span style="color:#f8f8f2;"> sun1 sun2
+      moonPos </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> liftA2 </span><span style="color:#50fa7b;">(,)</span><span style="color:#f8f8f2;"> moon1 moon2
+      phaseInfo </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> mkLunarPhase </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> sunPos </span><span style="color:#ff79c6;">&lt;</span><span style="color:#f8f8f2;">*</span><span style="color:#ff79c6;">&gt;</span><span style="color:#f8f8f2;"> moonPos
+      build (p, _changed) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">LunarPhase</span><span style="color:#f8f8f2;"> p (epheDate day1) (epheDate day2)
+  </span><span style="color:#ff79c6;">in</span><span style="color:#f8f8f2;"> maybe mempty (singleton </span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">LunarPhaseChange </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> build) phaseInfo
+mapLunarPhases  _ </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> mempty
+</span></code></pre>
+<p>And eventually reach the promised land, with a one-pass, memory efficient fold, using the <a href="https://hackage.haskell.org/package/streaming-0.2.3.0"><code>streaming</code></a> and <a href="https://hackage.haskell.org/package/foldl"><code>foldl</code></a> libraries in concert:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">worldAlmanac </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">UTCTime </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">UTCTime </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">IO</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Sq</span><span style="color:#f8f8f2;">.</span><span style="font-style:italic;color:#8be9fd;">Seq Event</span><span style="color:#f8f8f2;">)
+worldAlmanac start end </span><span style="color:#ff79c6;">= do
+  </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> ttStart </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> toJulianDay start
+  </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> ttEnd   </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> toJulianDay end
+  </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> utStart </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> toJulianDay start
+  </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> utEnd   </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> toJulianDay end
+  </span><span style="color:#ff79c6;">let</span><span style="color:#f8f8f2;"> ephe </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> streamEpheJDF ttStart ttEnd
+  (retro, cross, slowTransits, lun) </span><span style="color:#ff79c6;">:&gt;</span><span style="color:#f8f8f2;"> _ </span><span style="color:#ff79c6;">&lt;-
+</span><span style="color:#f8f8f2;">    ephe
+    &amp; ephemerisWindows </span><span style="color:#bd93f9;">2
+</span><span style="color:#f8f8f2;">    &amp; </span><span style="color:#bd93f9;">L</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">purely </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">fold mkAlmanac
+
+  pure </span><span style="color:#ff79c6;">$</span><span style="color:#f8f8f2;"> retro </span><span style="color:#ff79c6;">&lt;&gt;</span><span style="color:#f8f8f2;"> cross </span><span style="color:#ff79c6;">&lt;&gt;</span><span style="color:#f8f8f2;"> slowTransits </span><span style="color:#ff79c6;">&lt;&gt;</span><span style="color:#f8f8f2;"> lun
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    mkAlmanac </span><span style="color:#ff79c6;">=
+      </span><span style="color:#50fa7b;">(,,,) </span><span style="color:#ff79c6;">&lt;$&gt; </span><span style="color:#bd93f9;">L</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">foldMap getRetrogrades collapse
+            </span><span style="color:#ff79c6;">&lt;</span><span style="color:#f8f8f2;">*</span><span style="color:#ff79c6;">&gt; </span><span style="color:#bd93f9;">L</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">foldMap (getZodiacCrossings (tail defaultPlanets) westernZodiacSigns) collapse
+            </span><span style="color:#ff79c6;">&lt;</span><span style="color:#f8f8f2;">*</span><span style="color:#ff79c6;">&gt; </span><span style="color:#bd93f9;">L</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">foldMap (getTransits slowPairs) collapse
+            </span><span style="color:#ff79c6;">&lt;</span><span style="color:#f8f8f2;">*</span><span style="color:#ff79c6;">&gt; </span><span style="color:#bd93f9;">L</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">foldMap mapLunarPhases getMerged
+
+</span><span style="color:#6272a4;">-- some behind-the-scenes helpers:
+</span><span style="color:#50fa7b;">streamEpheJD </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">MonadIO </span><span style="color:#ffffff;">m </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">String </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">m x</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">JulianDayTT
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">JulianDayTT
+  </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">S</span><span style="color:#f8f8f2;">.</span><span style="font-style:italic;color:#8be9fd;">Stream</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">S</span><span style="color:#f8f8f2;">.</span><span style="font-style:italic;color:#8be9fd;">Of</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Ephemeris Double</span><span style="color:#f8f8f2;">)) </span><span style="color:#ffffff;">m </span><span style="color:#6be5fd;">()
+</span><span style="color:#f8f8f2;">streamEpheJD onError start end </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">each [start </span><span style="color:#ff79c6;">..</span><span style="color:#f8f8f2;"> end]
+  &amp; </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">mapM (liftIO </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> readEphemerisEasy </span><span style="color:#bd93f9;">False</span><span style="color:#f8f8f2;">)
+  &amp; </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">partitionEithers
+  </span><span style="color:#6272a4;">-- thanks, ocharles:
+  -- https://www.reddit.com/r/haskell/comments/5x2g0r/streaming_package_vs_pipes_conduit_question_on/def39od?utm_source=share&amp;utm_medium=web2x&amp;context=3
+</span><span style="color:#f8f8f2;">  &amp; </span><span style="color:#bd93f9;">S</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">mapM_ (lift </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> onError)
+
+</span><span style="color:#50fa7b;">streamEpheJDF </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">MonadIO </span><span style="color:#ffffff;">m</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">MonadFail </span><span style="color:#ffffff;">m</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">JulianDayTT </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">JulianDayTT </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">S</span><span style="color:#f8f8f2;">.</span><span style="font-style:italic;color:#8be9fd;">Stream</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">S</span><span style="color:#f8f8f2;">.</span><span style="font-style:italic;color:#8be9fd;">Of</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Ephemeris Double</span><span style="color:#f8f8f2;">)) </span><span style="color:#ffffff;">m </span><span style="color:#6be5fd;">()
+</span><span style="color:#f8f8f2;">streamEpheJDF </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> streamEpheJD fail
+
+</span></code></pre>
+<p>I believe there's further simplification to do here, in particular because as I actually <em>use</em> this stuff, I don't
+need the <code>Merge</code> bits as much if I only care about when events are <em>exact</em>, and it is a code smell that the
+<code>Semigroup</code> instance for a sequence of merge-able events is not fully associative in its <code>mappend</code> implementation. But, the eventual fold
+is <em>exactly</em> what I needed, and wanted. I'm currently reading the <a href="https://dl.acm.org/doi/abs/10.1145/2430532.2364520">Monoids: theme and variations</a> paper, and I believe there's more I can get from the humble Monoid to simplify this stuff than I've used thus far.</p>
+<p><strong>Summary</strong> Monoids changed my life, I'm a recovering typeclass addict.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>It all started with my wife and I wanting to build a mobile app successor to <a href="https://freenatalchart.xyz">freenatalchart.xyz</a>, with more interactivity and a calendar of events, and I ended up <em>really</em> diving deep into some of the richest (and sometimes, scariest) recesses of Haskell: using <code>nix</code> to develop and deploy, testing the green fields of graphql support and type-safe but dbms-unafraid database access, writing (and breaking) quite a bit of C and interfacing to it with actually pretty elegant (and semantically useful!) Haskell types, and facing head on the age-old problem of &quot;how do I look at a ton of data without blowing time <em>or</em> space too much,&quot; via the beauty of streaming, folds, and the humble semigroups+monoids. I still have quite a bit of code to write, but I'm very much enjoying the ride -- this level of yak shaving would have been long abandoned in a more loosely typed language, even if more &quot;mature&quot; libraries are available for some of the pain points I mentioned above.</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/haskell/">haskell</a>
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

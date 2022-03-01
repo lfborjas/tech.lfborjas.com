@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Continuations in ruby</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>8 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2011-03-27
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>In the weekends I like to learn lisp (my favorite lisp is scheme), and, whilst I do it in a chaotic fashion, I end up actually learning. Today I'm reading about continuations, a theme that is mentioned over and over in schemeland and which I hadn't the guts to try and understand. Until I found <a href="http://www.ccs.neu.edu/home/dorai/t-y-scheme/t-y-scheme-Z-H-15.html#node_chap_13">this chapter</a> in the book <a href="http://www.ccs.neu.edu/home/dorai/t-y-scheme/t-y-scheme.html">&quot;Teach yourself scheme in fixnum days&quot;</a>. As eye-opening as it is, what I found most surprising is that ruby also has continuation! So I'll sum up what I learned about continuations using ruby for the examples. <strong>All the examples and content are either paraphrased or taken directly from the above book</strong>.</p>
+<span id="continue-reading"></span>
+<p>The first example in the book is simple enough:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#bd93f9;">1 </span><span style="color:#ff79c6;">+ </span><span style="color:#ffffff;">callcc </span><span style="color:#f8f8f2;">{|</span><span style="font-style:italic;color:#ffb86c;">k</span><span style="color:#f8f8f2;">| </span><span style="color:#bd93f9;">2 </span><span style="color:#ff79c6;">+</span><span style="color:#f8f8f2;"> k</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call(</span><span style="color:#bd93f9;">3</span><span style="color:#f8f8f2;">) }
+</span></code></pre>
+<p>So, what is <code>k</code>? Well, you might see it like this: the point in the program we're leaving to go into the continuation block. Thus, <code>k</code> above would be:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#bd93f9;">1 </span><span style="color:#ff79c6;">+ </span><span style="color:#f8f8f2;">[]
+</span></code></pre>
+<p>Where the &quot;hole&quot; expressed by the brackets is where we left off to go into the definition of the continuation.</p>
+<p>Therefore, if we <em>call</em> this continuation, we'd be filling the hole with whatever parameter we pass, so, to our amazement, the above code would be equivalent to:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#bd93f9;">1 </span><span style="color:#ff79c6;">+ </span><span style="color:#bd93f9;">3 
+</span></code></pre>
+<p>What we just did, fill the hole and forget what we where doing, is called an <strong>escaping continuation</strong>.</p>
+<p>Not only can we escape from a continuation, but we can also <em>store</em> it and use it to our heart's content:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#f8f8f2;">r </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">nil
+1 </span><span style="color:#ff79c6;">+ </span><span style="color:#ffffff;">callcc </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">k</span><span style="color:#f8f8f2;">| 
+       r </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> k 
+       </span><span style="color:#bd93f9;">2 </span><span style="color:#ff79c6;">+</span><span style="color:#f8f8f2;"> k</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call(</span><span style="color:#bd93f9;">3</span><span style="color:#f8f8f2;">) 
+     </span><span style="color:#ff79c6;">end
+</span><span style="color:#6272a4;">#=&gt; 4
+</span><span style="color:#ffffff;">puts</span><span style="color:#f8f8f2;"> r</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call(</span><span style="color:#bd93f9;">5</span><span style="color:#f8f8f2;">)
+</span><span style="color:#6272a4;">#=&gt;6
+</span><span style="color:#ffffff;">puts </span><span style="color:#bd93f9;">3 </span><span style="color:#ff79c6;">+</span><span style="color:#f8f8f2;"> r</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call(</span><span style="color:#bd93f9;">5</span><span style="color:#f8f8f2;">)
+</span><span style="color:#6272a4;">#=&gt;6
+</span></code></pre>
+<p>Note the last example, instead of 9, which could be expected, we get 6! Why? Calling a continuation <em>always</em> forgets what it was doing to fill the continuation's need. Kinda romantic, isn't it?</p>
+<p>Now, let's define a recursive function which takes a list and returns the product of all of it's elements together:</p>
+<pre style="background-color:#282a36;">
+<code><span style="font-style:italic;color:#ff79c6;">def </span><span style="color:#50fa7b;">product</span><span style="color:#f8f8f2;">(</span><span style="font-style:italic;color:#ffb86c;">l</span><span style="color:#f8f8f2;">)
+    </span><span style="color:#ff79c6;">return </span><span style="color:#bd93f9;">1 </span><span style="color:#ff79c6;">if</span><span style="color:#f8f8f2;"> l</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">empty?
+    l</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">first </span><span style="color:#ff79c6;">*</span><span style="color:#f8f8f2;"> product(l</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">slice(</span><span style="color:#bd93f9;">1</span><span style="color:#ff79c6;">..-</span><span style="color:#bd93f9;">1</span><span style="color:#f8f8f2;">))
+</span><span style="color:#ff79c6;">end
+</span></code></pre>
+<p>Fair enough, but, what if one of the elements is a zero? Well, then we're in for lots of fruitless computations. Let's see how continuations could help here:</p>
+<pre style="background-color:#282a36;">
+<code><span style="font-style:italic;color:#ff79c6;">def </span><span style="color:#50fa7b;">product</span><span style="color:#f8f8f2;">(</span><span style="font-style:italic;color:#ffb86c;">l</span><span style="color:#f8f8f2;">)
+    </span><span style="color:#ffffff;">callcc </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">exit</span><span style="color:#f8f8f2;">|
+        </span><span style="color:#ff79c6;">return </span><span style="color:#bd93f9;">1 </span><span style="color:#ff79c6;">if</span><span style="color:#f8f8f2;"> l</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">empty?
+        </span><span style="color:#ff79c6;">unless</span><span style="color:#f8f8f2;"> l</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">first</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">zero?
+            l</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">first </span><span style="color:#ff79c6;">*</span><span style="color:#f8f8f2;"> product(l</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">slice(</span><span style="color:#bd93f9;">1</span><span style="color:#ff79c6;">..-</span><span style="color:#bd93f9;">1</span><span style="color:#f8f8f2;">))
+        </span><span style="color:#ff79c6;">else
+            </span><span style="color:#ffffff;">exit</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call </span><span style="color:#bd93f9;">0
+        </span><span style="color:#ff79c6;">end
+    end
+end
+</span></code></pre>
+<p>What's happening here? Well, remember how in school you learned about how a function is trapped when it makes recursive calls, waiting for them to end to finally die in peace? Well, here we stated that the <em>whole function</em> is a &quot;hole&quot; that wants fo be filled. In regular conditions, it just does the dreaded recursion. <em>But</em>, when it encounters a zero, it calls the continuation with zero and, what does <em>that</em> mean? Drum-doll... Exactly, the function forgets it was waiting for a recursion to end and just returns a zero, effectively avoiding useless calls! In more scientific terms, the whole call stack is sent to hell and the original function returns happily. So, again, we used an <strong>escaping continuation</strong> to leave a fruitless recursive call stack behind. Neat. </p>
+<p>Now, to a more involved example. </p>
+<p>Remember trees? You loved them, didn't you, with all those cool recursive algorithms all over the place? Well, let's simplify 'em a little and see them as nested lists. Ok, now, let's say that we have a function called <code>same_fringe?</code> that takes two nested lists (ahem, trees, remember?) and returns true if they have the same leaves in the same order, and false otherwise. Like this:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#f8f8f2;">[</span><span style="color:#bd93f9;">1</span><span style="color:#f8f8f2;">, [</span><span style="color:#bd93f9;">2</span><span style="color:#f8f8f2;">,</span><span style="color:#bd93f9;">3</span><span style="color:#f8f8f2;">]]</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">same_fringe? [[</span><span style="color:#bd93f9;">1</span><span style="color:#f8f8f2;">,</span><span style="color:#bd93f9;">2</span><span style="color:#f8f8f2;">],</span><span style="color:#bd93f9;">3</span><span style="color:#f8f8f2;">] </span><span style="color:#6272a4;">#=&gt; true
+</span><span style="color:#f8f8f2;">[</span><span style="color:#bd93f9;">1</span><span style="color:#f8f8f2;">,</span><span style="color:#bd93f9;">2</span><span style="color:#f8f8f2;">,</span><span style="color:#bd93f9;">3</span><span style="color:#f8f8f2;">]</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">same_fringe? [</span><span style="color:#bd93f9;">1</span><span style="color:#f8f8f2;">, [</span><span style="color:#bd93f9;">3</span><span style="color:#f8f8f2;">, </span><span style="color:#bd93f9;">2</span><span style="color:#f8f8f2;">]] </span><span style="color:#6272a4;">#=&gt;false
+</span></code></pre>
+<p>So let's hijack the <code>Array</code> class and put the method there. Remeber, we're being functional here, so let's flatten the lists and see if they match:</p>
+<pre style="background-color:#282a36;">
+<code><span style="font-style:italic;color:#ff79c6;">class </span><span style="text-decoration:underline;color:#8be9fd;">Array
+    </span><span style="font-style:italic;color:#ff79c6;">def </span><span style="color:#50fa7b;">same_fringe?</span><span style="color:#f8f8f2;">(</span><span style="font-style:italic;color:#ffb86c;">o</span><span style="color:#f8f8f2;">)
+        </span><span style="color:#bd93f9;">self</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">flatten </span><span style="color:#ff79c6;">==</span><span style="color:#f8f8f2;"> o</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">flatten
+    </span><span style="color:#ff79c6;">end
+end
+</span></code></pre>
+<p>This definition is deceptively more succinct than the scheme version of the example, granted; but the computational complexity remains: Clever as it is, the <a href="https://github.com/ruby/ruby/blob/trunk/array.c#L3669">implementation for flatten in the ruby language</a> still has to visit the whole array to flatten it, which is a waste of resources if we could somehow just go leaf by leaf, without flattening, and leave as soon as we have an answer.</p>
+<p>The more clever among you could recognize this as an occasion to use a generator, but, in ruby, the closest thing we have is yielding to a block, which is hardly a proper generator; that is, we want to call a function that returns the next element in the collection after the last time we called it, anywhere, and not just inside a block. (Python <a href="http://wiki.python.org/moin/Generators">does have</a> generators, though, and in java, you can have them if you implement the <a href="http://download.oracle.com/javase/1.4.2/docs/api/java/util/Iterator.html">iterator interface</a>). </p>
+<p>A continuation, however, could come in handy in this situation:</p>
+<pre style="background-color:#282a36;">
+<code><span style="font-style:italic;color:#ff79c6;">class </span><span style="text-decoration:underline;color:#8be9fd;">Array
+    </span><span style="font-style:italic;color:#ff79c6;">def </span><span style="color:#50fa7b;">rest
+        </span><span style="color:#bd93f9;">self</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">slice </span><span style="color:#bd93f9;">1</span><span style="color:#ff79c6;">..-</span><span style="color:#bd93f9;">1
+    </span><span style="color:#ff79c6;">end
+    
+    </span><span style="font-style:italic;color:#ff79c6;">def </span><span style="color:#50fa7b;">tree_generator
+        </span><span style="color:#ffffff;">caller </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">nil
+</span><span style="color:#f8f8f2;">        generate_leaves </span><span style="color:#ff79c6;">= </span><span style="color:#ffffff;">lambda </span><span style="color:#ff79c6;">do
+            loop = </span><span style="color:#ffffff;">lambda </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">tree</span><span style="color:#f8f8f2;">|
+               </span><span style="color:#ff79c6;">if</span><span style="color:#f8f8f2;"> tree</span><span style="color:#ff79c6;">.</span><span style="color:#ffffff;">is_a?</span><span style="color:#f8f8f2;">(</span><span style="color:#ffffff;">Array</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">and</span><span style="color:#f8f8f2;"> tree</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">empty?
+                </span><span style="color:#bd93f9;">nil </span><span style="color:#6272a4;">#we reached the end of the array
+               </span><span style="color:#ff79c6;">elsif</span><span style="color:#f8f8f2;"> tree</span><span style="color:#ff79c6;">.</span><span style="color:#ffffff;">is_a? Array
+                </span><span style="color:#ff79c6;">loop.</span><span style="color:#f8f8f2;">call tree</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">first
+                </span><span style="color:#ff79c6;">loop.</span><span style="color:#f8f8f2;">call tree</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">rest
+               </span><span style="color:#ff79c6;">else
+                </span><span style="color:#ffffff;">callcc </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">rest_of_tree</span><span style="color:#f8f8f2;">|
+                    </span><span style="color:#6272a4;">#I just don&#39;t get this :(
+</span><span style="color:#f8f8f2;">                    generate_leaves </span><span style="color:#ff79c6;">= </span><span style="color:#ffffff;">lambda</span><span style="color:#f8f8f2;">{rest_of_tree</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call(</span><span style="color:#bd93f9;">:resume</span><span style="color:#f8f8f2;">)}
+                    </span><span style="color:#ffffff;">caller</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call tree
+                </span><span style="color:#ff79c6;">end
+               end
+            end
+            loop.</span><span style="color:#f8f8f2;">call(</span><span style="color:#bd93f9;">self</span><span style="color:#f8f8f2;">)
+        </span><span style="color:#ff79c6;">end
+        </span><span style="color:#ffffff;">lambda </span><span style="color:#ff79c6;">do
+            </span><span style="color:#ffffff;">callcc </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">k</span><span style="color:#f8f8f2;">|
+                </span><span style="color:#ffffff;">caller </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> k
+                generate_leaves</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call
+            </span><span style="color:#ff79c6;">end
+        end
+    end
+
+end
+</span></code></pre>
+<p>The above procedure is rather convoluted, and I must confess that, although I had to understand it to translate it to ruby, I didn't get the last bit about sending <code>:resume</code> to the <code>generate_leaves</code> lambda. But the gist of the method is mind-blowing: it defines an internal method will get the leaves one by one (<code>generate_leaves</code>) and returns a method that sets itself as a continuation for that internal method; the internal generator, for it's part, does something amazing: when it is inside of an array, it makes recursive calls to go inside that array's head an tail. And when we reach a leaf, we <strong>return a continuation that thinks that the whole tree is where we just were</strong>. </p>
+<p>To further illustrate this point, here's a generator that can go through an array yielding one element at a date =</p>
+<pre style="background-color:#282a36;">
+<code><span style="font-style:italic;color:#ff79c6;">class </span><span style="text-decoration:underline;color:#8be9fd;">Array
+   </span><span style="font-style:italic;color:#ff79c6;">def </span><span style="color:#50fa7b;">each_one
+</span><span style="color:#f8f8f2;">        control_state </span><span style="color:#ff79c6;">= </span><span style="color:#ffffff;">lambda </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">ret</span><span style="color:#f8f8f2;">|
+            each </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">elem</span><span style="color:#f8f8f2;">|
+                </span><span style="color:#ffffff;">callcc </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">resume</span><span style="color:#f8f8f2;">|
+                    control_state </span><span style="color:#ff79c6;">= </span><span style="color:#ffffff;">lambda </span><span style="color:#ff79c6;">do </span><span style="color:#f8f8f2;">|</span><span style="font-style:italic;color:#ffb86c;">r</span><span style="color:#f8f8f2;">|
+                        resume</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call r
+                    </span><span style="color:#ff79c6;">end
+</span><span style="color:#f8f8f2;">                    ret</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call elem
+                </span><span style="color:#ff79c6;">end
+            end
+</span><span style="color:#f8f8f2;">            ret</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call </span><span style="color:#bd93f9;">:the_end
+        </span><span style="color:#ff79c6;">end
+        </span><span style="color:#ffffff;">lambda </span><span style="color:#ff79c6;">do
+            </span><span style="color:#ffffff;">callcc </span><span style="color:#f8f8f2;">{|</span><span style="font-style:italic;color:#ffb86c;">k</span><span style="color:#f8f8f2;">| control_state</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call(k)}  }
+        </span><span style="color:#ff79c6;">end
+    end
+end
+</span></code></pre>
+<p>This one is clearer: the method returns a procedure that will call, the first time, the <code>control_state</code> procedure, which is defined first as something that goes through each element of the original array, but it stores where it is the computation for the next time it is called. So each time we call whatever was returned to us in a call to <code>each_one</code>, we'll get <em>the next element from where we left off!</em>. That's more powerful that the <code>each</code> method, because we can obtain this procedure and call it wherever we want, not only inside a single block. Color me thunderstruck.</p>
+<p>Well, let's redefine <code>same_fringe?</code> using this amazing new knowledge:</p>
+<pre style="background-color:#282a36;">
+<code><span style="font-style:italic;color:#ff79c6;">class </span><span style="text-decoration:underline;color:#8be9fd;">Array
+    </span><span style="font-style:italic;color:#ff79c6;">def </span><span style="color:#50fa7b;">same_fringe?</span><span style="color:#f8f8f2;">(</span><span style="font-style:italic;color:#ffb86c;">o</span><span style="color:#f8f8f2;">)
+        gen1 </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">self</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">tree_generator
+        gen2 </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> o</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">tree_generator
+        </span><span style="color:#ff79c6;">loop do
+</span><span style="color:#f8f8f2;">            leaf1 </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> gen1</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call
+            leaf2 </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> gen2</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">call
+            </span><span style="color:#ff79c6;">if</span><span style="color:#f8f8f2;"> leaf1 </span><span style="color:#ff79c6;">==</span><span style="color:#f8f8f2;"> leaf2 
+                </span><span style="color:#ff79c6;">if</span><span style="color:#f8f8f2;"> leaf1</span><span style="color:#ff79c6;">.</span><span style="color:#ffffff;">nil?
+                    </span><span style="color:#ff79c6;">return </span><span style="color:#bd93f9;">true
+                </span><span style="color:#ff79c6;">end
+            else
+                return </span><span style="color:#bd93f9;">false
+            </span><span style="color:#ff79c6;">end
+        end
+    end
+end
+</span></code></pre>
+<p>Now, we could go a little further and generalize this generator thing with a method that creates <strong>coroutines</strong>, but this would mean being able to create a binding and then making it available for a method, but that seems impossible in ruby. To illustrate this, we could see the scheme macro that does this (in racket, remember to <code>(require (lib &quot;defmacro.ss&quot;))</code>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#f8f8f2;">(define</span><span style="color:#ff79c6;">-</span><span style="color:#f8f8f2;">macro coroutine
+  (</span><span style="color:#8be9fd;">lambda </span><span style="color:#f8f8f2;">(x . body)
+    `(letrec ((</span><span style="color:#ff79c6;">+</span><span style="color:#f8f8f2;">local</span><span style="color:#ff79c6;">-</span><span style="color:#f8f8f2;">control</span><span style="color:#ff79c6;">-</span><span style="color:#f8f8f2;">state
+               (</span><span style="color:#8be9fd;">lambda </span><span style="color:#f8f8f2;">(,x) ,@body))
+              (resume
+               (</span><span style="color:#8be9fd;">lambda </span><span style="color:#f8f8f2;">(c v)
+                 (call</span><span style="color:#ff79c6;">/</span><span style="color:#f8f8f2;">cc
+                  (</span><span style="color:#8be9fd;">lambda </span><span style="color:#f8f8f2;">(k)
+                    (</span><span style="color:#8be9fd;">set</span><span style="color:#f8f8f2;">! </span><span style="color:#ff79c6;">+</span><span style="color:#f8f8f2;">local</span><span style="color:#ff79c6;">-</span><span style="color:#f8f8f2;">control</span><span style="color:#ff79c6;">-</span><span style="color:#f8f8f2;">state k)
+                    (c v))))))
+       (</span><span style="color:#8be9fd;">lambda </span><span style="color:#f8f8f2;">(v)
+         (</span><span style="color:#ff79c6;">+</span><span style="color:#f8f8f2;">local</span><span style="color:#ff79c6;">-</span><span style="color:#f8f8f2;">control</span><span style="color:#ff79c6;">-</span><span style="color:#f8f8f2;">state v)))))
+</span></code></pre>
+<p>And we can do awesome things with it, like defining a coroutine that fetches a leaf and sends its leaves to <em>another</em> coroutine that can then match this leaf to another leaf, fetched by yet another instance of the same coroutine acting on the other tree. Hence, we could create a procedure that uses two instances of a fetcher coroutine and a matcher coroutine and puts all three to work to fetch leaf by leaf and compare them, all in different procedures that remember their interaction with each other. To see these little guys, see <a href="http://www.ccs.neu.edu/home/dorai/t-y-scheme/t-y-scheme-Z-H-15.html#node_sec_13.4">the original article</a>, because in ruby, I can't find a way to simulate a way to mimic the <code>letrec</code> form to call the above macro on a function definition and <em>give</em> it the binding with the definition of <code>resume</code> to the function; the more we could do I guess could be a function that takes a block (the <code>body</code> in the above macro), but making that block recognize the <code>resume</code> method as part of its environment, well, there is when my ruby falls short (maybe we could use the rubinius ruby internals?).</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/ruby/">ruby</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/scheme/">scheme</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/continuations/">continuations</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

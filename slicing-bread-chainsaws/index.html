@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Slicing bread with chainsaws, one size doesn&#x27;t fit all webdev needs</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>4 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2010-08-22
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>Ok, world, big fat disclaimer here: I'm not an experienced developer in all of the web frameworks that have existed in the history of ever (I've only done kinda serious stuff in three of 'em) and this thing I'm saying here is more of a hypothesis that I'm currently putting to experience's scrutiny than a rational, exhaustively thought, conclusion. Now, read on.</p>
+<p>Nowadays, there are lots of web frameworks, and people have done wonderful stuff with them (twitter was written <a href="http://techcrunch.com/2008/05/01/twitter-said-to-be-abandoning-ruby-on-rails/">initially</a> with ruby on rails, p.e.). And, truly, they have allowed the now commonplace fast, yet robust and standards compliant, development of big projects. But what about the little projects? Those little apps with at most a couple of tables in a database and a simple service to offer? Well, the really cool and experienced developers just do <em>that</em> in the big frameworks too...</p>
+<p>Ay, there's the rub that makes big frameworks of so big a hype.</p>
+<span id="continue-reading"></span>
+<p>You see, we're used to (and, after all, it was the inception of) big ol' web applications with lots of functionality and storing everything in the universe because in the old days (you know, probably a couple of years ago) <em>every website was isolated</em>, little or none applications depended on (or aided) others like now: we have APIs, single sign on protocols, services and whatnot: the web is no more a place for &quot;sites&quot; because now it's full of applications which interact with each other and feed each other, thus evolving into more and more atomic services and mashups. 
+And even more, in the mashups world, you could write an entire, useful, web application <em>almost</em> entirely with client side code, with your server barely doing more than storing some stuff in a database and serving the files. (Don't believe me? Let's say you want user authentication: <a href="http://developers.facebook.com/docs/reference/javascript/FB.login">facebook</a> and <a href="http://dev.twitter.com/anywhere/begin#login-signup">twitter</a>  have pure javascript SSO facilities. You want some real world info? There are the <a href="http://code.google.com/apis/ajax/">google ajax apis</a> ).</p>
+<p>I see, then, at least two cases where a big framework is no more a quick way to do stuff, but becomes <em>overkill</em>: when your service - or product - is so atomic that in the server side you have few controllers and models, or when you build a mashup such that you can survive with pure client side code.</p>
+<p>In cases like these, I, for one, would never create a <a href="http://rubyonrails.org/">ruby on rails</a> or <a href="http://www.djangoproject.com/">django</a> project: you are gonna end up with lots of one liner scripts because there's a threshold when too much <em>modularity</em> and strict <em>separation of concerns</em> become little more than <em>bureaucracy</em>. If your service is a straightforward little one. <strong>Shouldn't the framework you use to write it be the same?</strong>.</p>
+<p>That happened to me last night: I wanted to make a little one-weekend-single-geek-hackaton-made project and went for ruby, because, hey, <a href="http://mislav.uniqpath.com/poignant-guide/">chunky bacon</a>. I wanted to give a try to ruby on rails 3 beta <em>And wasted the whole evening of yesterday dealing with gems and the ruby language versions and magically generated files trying to display a doggone <strong>hello world haml-powered page</strong></em>. I conceed to the fanboys that it was my first time on rail's magical elven world. But my application was so little that I was gonna <em>waste</em> more time learning the intricacies of the framework than <em>actually developing</em>. I switched to <a href="http://www.sinatrarb.com/">sinatra</a> this morning (being also my first time with it and my second attempt to programming in ruby) and <em>had the models and a couple of views and controllers up and running in less than an hour</em>.  And it's not the first time, my first complete <a href="http://nodejs.org/">node.js</a> powered <a href="http://www.catharted.info/">app</a> was also created in a weekend thanks to <a href="http://expressjs.com/">a microframework</a>.</p>
+<p>There, I said it. If you develop little applications with big frameworks you're probably lazy or a bureaucrat. Or didn't know that microframeworks existed, like me.</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/microframeworks/">microframeworks</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/ruby/">ruby</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/node-js/">node.js</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/sinatra/">sinatra</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/rails/">rails</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/django/">django</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

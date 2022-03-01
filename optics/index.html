@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Taking a good look at Optics</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>24 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2021-12-30
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>As part of my astrological forays, I built <a href="https://github.com/lfborjas/almanac">a little library</a> that can traverse an interval of time and find significant events (changes in moon phase, a planet going retrograde/direct, ingresses into zodiac signs,
+transits, eclipses.) The data produced is necessarily verbose: you get back a sequence
+of events, and each type of event carries information about itself; in some cases,
+said information can be composed of further complex data (e.g. a Transit can tell you
+all the phases of application/separation it goes through in the interval, and each phase has a beginning and end.) To have to go through a sequence like this and
+pattern match and deconstruct in different ways depending on your use case seemed like a lot of <em>annoying boilerplate</em> that I, as a library author, could do better to help with than to just give you the types to pattern match, some good names, and a firm handshake. 
+And this is when I realized what's so great about a popular, albeit intimidating, concept in the Haskell ecosystem: <strong>optics</strong>: the ability to build greatly upon &quot;cheap&quot; abstractions.</p>
+<span id="continue-reading"></span><h2 id="getting-to-it">Getting (to) it</h2>
+<p>I have to admit, I've been one of the attention-challenged developers that gazes upon
+the <a href="https://i.imgur.com/ALlbPRa.png">Sacred UML</a> and despairs, and both very practical tutorials that devolve into very clever combinator golf and strongly reasoned
+but impenetrable category theoretic approaches have left me in a state of mild panic.</p>
+<p>I watched a few videos, read a few articles and book chapters that <em>mostly</em> helped me cobble together a working knowledge of optics/lenses, but beyond the &quot;it's sort of just getters and setters for Haskell innit&quot; notion that allows you to dig deep into some
+JSON or put together a couple diagrams or swagger docs, I didn't feel like I <em>got</em> it. On the one hand, why did
+the extremely pedestrian notion of <code>thing.property.property.property = new_value</code> feel
+so contrived? On the other hand, it felt like it <em>needed</em> to be more &quot;fancy&quot; to survive in the world of pure, lazy, functional programming.</p>
+<p>It wasn't until I was sitting around thinking about how I can allow users of my library to go through a sequence of product values composed of further product values with some sum values in the middle there that the value proposition landed: I don't need a big ol' dependency like <code>lens</code> to give you a few optics that you can then grab
+and do optics things with. And <em>you</em> don't need <code>lens</code> either: you can use <code>microlens</code> or another smaller library, or write a few little functions, and suddenly you have very concise, <em>composable</em> access to just the data you need, and a whole vocabulary of cool combinators to grab from as your use cases evolve (and you eventually end up bringing in <code>lens</code>.) And that is only possible because the <em>abstractions</em> of optics can be represented with a few type aliases (or profunctors, more on that later,) that is: it's already there in the language, we don't need to agree on a library. And this very concrete need, not <em>needing</em> to bring in big dependencies, makes it a very cost-effective abstraction: you don't need to invest a lot of your dependency budget, but you can get a lot of possibilities of re-combination out of it.</p>
+<h2 id="providing-some-baby-optics">Providing some baby optics</h2>
+<p>After reading <a href="https://vrom911.github.io/blog/write-yourself-a-lens">this excellent blog post</a> about writing one's own lenses, as well as the <a href="https://github.com/monadfix/microlens">microlens README</a>, the <a href="https://github.com/kowainik/relude/blob/3b2f4f85521c0558caafece937da44ecbbb54355/src/Relude/Extra/Lens.hs">relude implementation</a> and last but not least <a href="https://github.com/ekmett/lens/wiki/How-can-I-write-lenses-without-depending-on-lens%3F">kmett's own wiki on the matter</a>, I realized that, to provide the kind of basic optics that my library could benefit from (i.e. monomorphic lenses and prisms... or something close to that,) I literally only needed <a href="https://github.com/lfborjas/almanac/blob/9731199f1d43bafca1d002bbf68a80c8c4783535/src/Almanac/Internal/Lens.hs">a couple of type aliases</a>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#f8f8f2;">{-# </span><span style="color:#ff79c6;">LANGUAGE</span><span style="color:#f8f8f2;"> RankNTypes #-}
+</span><span style="color:#ff79c6;">module </span><span style="color:#f8f8f2;">Almanac.Internal.Lens </span><span style="color:#ff79c6;">where
+
+</span><span style="color:#6272a4;">-- | General lens: can change the type of the container.
+-- from: https://hackage.haskell.org/package/lens-5.1/docs/Control-Lens-Lens.html#t:Lens
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">Lens</span><span style="color:#f8f8f2;"> s t a b </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall f</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Functor</span><span style="color:#f8f8f2;"> f </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (a </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f b) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> s </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f t
+
+</span><span style="color:#6272a4;">-- | Monomorphic (simple) &#39;Lens&#39;: can&#39;t change the type when setting
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">Lens</span><span style="color:#f8f8f2;">&#39; s a </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Lens</span><span style="color:#f8f8f2;"> s s a a
+
+</span><span style="color:#6272a4;">-- | General Traversal
+-- from: https://hackage.haskell.org/package/lens-5.1/docs/Control-Lens-Type.html#t:Traversal
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">Traversal</span><span style="color:#f8f8f2;"> s t a b </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall f</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Applicative</span><span style="color:#f8f8f2;"> f </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (a </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f b) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> s </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f t
+
+</span><span style="color:#6272a4;">-- | Monomorphic &#39;Traversal&#39;
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">Traversal</span><span style="color:#f8f8f2;">&#39; s a </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Traversal</span><span style="color:#f8f8f2;"> s s a a
+</span></code></pre>
+<p>And to &quot;create&quot; lenses, I could generalize the process with a simple helper function:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | Create a &#39;Lens&#39;&#39; from a getter and setter
+</span><span style="color:#50fa7b;">simpleLens </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">s </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">s </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">s</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Lens</span><span style="color:#f8f8f2;">&#39; </span><span style="color:#ffffff;">s a
+</span><span style="color:#f8f8f2;">simpleLens getter setter f s </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> setter s </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> f (getter s)
+</span></code></pre>
+<p>The types in my library are <a href="https://github.com/lfborjas/almanac/blob/9731199f1d43bafca1d002bbf68a80c8c4783535/src/Almanac/Event/Types.hs">either big records composed of further records, or sum types</a>, so lenses for the former make sense -- for the famous/infamous <code>looks.like.java</code> nested access uses cases. For the case where one wants to focus on one of different options in a sum type, the optics literature would posit a <code>Prism</code>: however, if you go looking, you'll find that a bona-fide <code>Prism</code> is defined in terms of type classes from <a href="http://hackage.haskell.org/package/profunctors"><code>profunctors</code></a>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">Prism</span><span style="color:#f8f8f2;"> s t a b </span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">    forall p f</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Choice</span><span style="color:#f8f8f2;"> p, </span><span style="color:#bd93f9;">Applicative</span><span style="color:#f8f8f2;"> f) </span><span style="color:#ff79c6;">=&gt;
+</span><span style="color:#f8f8f2;">    p a (f b) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> p s (f t)
+</span></code></pre>
+<p>Which would allow one to use all combinators that can be used on Prisms... but it seemed like for <em>my</em> prospective use case, focused more on reading/getting than in writing/setting the pseudo-prisms that are actually <code>Traversal</code>s as <a href="https://hackage.haskell.org/package/microlens-0.4.12.0/docs/Lens-Micro.html#g:7">proposed by microlens</a> were more than enough. With the above <code>simpleLens</code> helper and the &quot;Traversals misused as Prisms&quot; concession, I was ready to <a href="https://github.com/lfborjas/almanac/blob/9731199f1d43bafca1d002bbf68a80c8c4783535/src/Almanac/Optics.hs">provide a few optics</a>. For example:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">eventL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Lens</span><span style="color:#f8f8f2;">&#39; </span><span style="font-style:italic;color:#8be9fd;">ExactEvent Event
+</span><span style="color:#f8f8f2;">eventL </span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">  simpleLens get set
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    get </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> event
+    set e evt&#39; </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> e{event</span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;">evt&#39;}
+
+</span><span style="color:#50fa7b;">exactitudeMomentsL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Lens</span><span style="color:#f8f8f2;">&#39; </span><span style="font-style:italic;color:#8be9fd;">ExactEvent</span><span style="color:#f8f8f2;"> [</span><span style="font-style:italic;color:#8be9fd;">UTCTime</span><span style="color:#f8f8f2;">]
+exactitudeMomentsL </span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">  simpleLens get set
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    get </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> exactitudeMoments
+    set e exc&#39; </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> e{exactitudeMoments </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> exc&#39;}
+
+</span><span style="color:#50fa7b;">_LunarPhaseInfo </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Traversal</span><span style="color:#f8f8f2;">&#39; </span><span style="font-style:italic;color:#8be9fd;">Event LunarPhaseInfo
+</span><span style="color:#f8f8f2;">_LunarPhaseInfo f (</span><span style="color:#bd93f9;">LunarPhase</span><span style="color:#f8f8f2;"> info) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">LunarPhase </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> f info
+_LunarPhaseInfo _ evt </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> pure evt
+</span></code></pre>
+<p>Allow writing code <a href="https://github.com/lfborjas/almanac/blob/9731199f1d43bafca1d002bbf68a80c8c4783535/test/AlmanacSpec.hs#L130-L134">such as</a>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#f8f8f2;">  it </span><span style="color:#f1fa8c;">&quot;finds all lunar phases in November 2021&quot; </span><span style="color:#ff79c6;">$ do
+    let</span><span style="color:#f8f8f2;"> nov2021 </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">UTCTime</span><span style="color:#f8f8f2;"> (fromGregorian </span><span style="color:#bd93f9;">2021 11 1</span><span style="color:#f8f8f2;">) </span><span style="color:#bd93f9;">0
+</span><span style="color:#f8f8f2;">        dec2021 </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">UTCTime</span><span style="color:#f8f8f2;"> (fromGregorian </span><span style="color:#bd93f9;">2021 12 1</span><span style="color:#f8f8f2;">) </span><span style="color:#bd93f9;">0
+</span><span style="color:#f8f8f2;">        q </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> mundane
+              (</span><span style="color:#bd93f9;">Interval</span><span style="color:#f8f8f2;"> nov2021 dec2021)
+              [</span><span style="color:#bd93f9;">QueryLunarPhase</span><span style="color:#f8f8f2;">]
+        expectedPhases </span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">          [
+            (</span><span style="color:#bd93f9;">WaningCrescent</span><span style="color:#f8f8f2;">,</span><span style="color:#f1fa8c;">&quot;2021-11-01T13:28:27.314121723175Z&quot;</span><span style="color:#f8f8f2;">),
+            (</span><span style="color:#bd93f9;">NewMoon</span><span style="color:#f8f8f2;">,</span><span style="color:#f1fa8c;">&quot;2021-11-04T21:14:36.684200763702Z&quot;</span><span style="color:#f8f8f2;">),
+            (</span><span style="color:#bd93f9;">WaxingCrescent</span><span style="color:#f8f8f2;">,</span><span style="color:#f1fa8c;">&quot;2021-11-08T02:31:28.868464529514Z&quot;</span><span style="color:#f8f8f2;">),
+            (</span><span style="color:#bd93f9;">FirstQuarter</span><span style="color:#f8f8f2;">,</span><span style="color:#f1fa8c;">&quot;2021-11-11T12:46:02.566146254539Z&quot;</span><span style="color:#f8f8f2;">),
+            (</span><span style="color:#bd93f9;">WaxingGibbous</span><span style="color:#f8f8f2;">,</span><span style="color:#f1fa8c;">&quot;2021-11-15T07:27:48.519482016563Z&quot;</span><span style="color:#f8f8f2;">),
+            (</span><span style="color:#bd93f9;">FullMoon</span><span style="color:#f8f8f2;">,</span><span style="color:#f1fa8c;">&quot;2021-11-19T08:57:27.984892129898Z&quot;</span><span style="color:#f8f8f2;">),
+            (</span><span style="color:#bd93f9;">WaningGibbous</span><span style="color:#f8f8f2;">,</span><span style="color:#f1fa8c;">&quot;2021-11-23T12:50:27.58442312479Z&quot;</span><span style="color:#f8f8f2;">),
+            (</span><span style="color:#bd93f9;">LastQuarter</span><span style="color:#f8f8f2;">,</span><span style="color:#f1fa8c;">&quot;2021-11-27T12:27:40.648325085639Z&quot;</span><span style="color:#f8f8f2;">)
+          ] &amp; map (second mkUTC)
+    exactPhases </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> runQuery q </span><span style="color:#ff79c6;">&gt;&gt;=</span><span style="color:#f8f8f2;"> eventsWithExactitude
+    </span><span style="color:#ff79c6;">let</span><span style="color:#f8f8f2;"> digest </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> (summarize </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> exactPhases) ^</span><span style="color:#ff79c6;">..</span><span style="color:#f8f8f2;"> traversed </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _Just
+        summarize evt </span><span style="color:#ff79c6;">=
+          let</span><span style="color:#f8f8f2;"> phase      </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> evt ^</span><span style="color:#ff79c6;">?</span><span style="color:#f8f8f2;"> eventL</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">_LunarPhaseInfo</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">lunarPhaseNameL
+              firstExact </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> evt ^</span><span style="color:#ff79c6;">?</span><span style="color:#f8f8f2;"> exactitudeMomentsL</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;">_head
+          </span><span style="color:#ff79c6;">in </span><span style="color:#50fa7b;">(,) </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> phase </span><span style="color:#ff79c6;">&lt;</span><span style="color:#f8f8f2;">*</span><span style="color:#ff79c6;">&gt;</span><span style="color:#f8f8f2;"> firstExact
+    digest </span><span style="color:#ff79c6;">`shouldBe`</span><span style="color:#f8f8f2;"> expectedPhases
+</span></code></pre>
+<p>That is: run the query, and try to find all phases for which we were able to calculate moments of exactitude (not all events are guaranteed to get their moments of exactitude calculated -- a transit may be happening, but not become exact in the examined interval); for all of those, get the name of the phase. The alternative is a ton of pattern matching. Arguably, one <em>still</em> needs to know the &quot;shape&quot; of things (what data constitutes an event, and a lunar phase,) but the resulting code is concise, reusable in smaller blocks, and can be put together with existing combinators and optics into existing types (like the <code>_Just</code> or <code>_head</code> prisms) -- vs. you having to write your own pseudo-optics by pattern matching every time you want to &quot;look into&quot; a particular path in the data: this kind of boilerplate evaporates.</p>
+<p>Granted, <a href="https://github.com/lfborjas/almanac/commit/8fc53a3a42a5e73de78d775a23aca10ee6ae5718#diff-153ecf11b2397074c03cdb86be2721f4efcddc2fcf63e043c3412bd0299e953c">a previous incarnation</a> of the above code in specific is <em>less dense</em>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">extractMoonPhaseInfo </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Seq ExactEvent </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> [(</span><span style="font-style:italic;color:#8be9fd;">LunarPhaseName</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">UTCTime</span><span style="color:#f8f8f2;">)]
+extractMoonPhaseInfo evts </span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">  fmap summarize evts &amp; toList &amp; catMaybes
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    summarize (</span><span style="color:#bd93f9;">ExactEvent</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">LunarPhase LunarPhaseInfo</span><span style="color:#f8f8f2;">{lunarPhaseName}) (firstExact</span><span style="color:#ff79c6;">:</span><span style="color:#f8f8f2;">_)) </span><span style="color:#ff79c6;">=
+      </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> (lunarPhaseName, firstExact)
+    summarize _ </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Nothing
+
+</span><span style="color:#6272a4;">-- setup is the same ...
+-- it &quot;....
+</span><span style="color:#f8f8f2;">        exactPhases </span><span style="color:#ff79c6;">&lt;-</span><span style="color:#f8f8f2;"> runQuery q </span><span style="color:#ff79c6;">&gt;&gt;=</span><span style="color:#f8f8f2;"> eventsWithExactitude
+        </span><span style="color:#ff79c6;">let</span><span style="color:#f8f8f2;"> digest </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> extractMoonPhaseInfo exactPhases
+</span><span style="color:#6272a4;">--      digest `shouldBe` ...
+</span></code></pre>
+<p>But, in my view, it's also less modular: I needed a separate helper function to isolate the
+deep pattern-matching, and the building blocks (i.e. &quot;here's how you get the phase name&quot;, and &quot;here's how you get the first moment of exactitude&quot;) were less obvious candidates for use in other situations in the very same test suite, which meant having to figure out ad-hoc &quot;optics&quot; to look into the bits of data that I cared about for each
+test case, as opposed to just composing existing optics.</p>
+<p>So, with a couple of type aliases, and some elbow grease (didn't want to introduce a fancy <code>TemplateHaskell</code> internal module to call <code>simpleLens</code> for me) to provide the obvious lenses and &quot;prisms&quot;, I can now allow the deep-nested access in the &quot;dialect&quot; of optics that some users prefer (others can continue using the less esoteric approach of pattern matching and judicious helper functions; and whomever chooses this, doesn't have to carry a big ol' <code>lens</code> dependency that they're not using.) </p>
+<p>Practical needs met, I still felt like the matter of &quot;can't really provide real Prisms&quot; hid some interesting discoveries, so I went looking for some literature on this whole optics thing.</p>
+<h2 id="down-the-profunctors-rabbit-hole">Down the profunctors rabbit hole</h2>
+<p>Reading the <code>lens</code> package haddocks didn't really get me very far: there's a nice symmetry to the definitions of <code>Lens</code> and <code>Traversal</code> reproduced above, and <code>Prism</code>, with its weird <code>Choice</code> constraint, looked almost offensively out of place. Fortunately, I had heard in passing that even though the most popular library, <code>lens</code>, uses a representation of optics called the <strong>van Laarhoven encoding</strong>, all optics could also be represented as profunctors without losing the &quot;you can get them for free out of existing concepts&quot; elegance, so I grabbed a couple of papers and articles:</p>
+<ul>
+<li><a href="https://golem.ph.utexas.edu/category/2020/01/profunctor_optics_the_categori.html">Profunctor Optics: the categorical view</a></li>
+<li><a href="https://www.cs.ox.ac.uk/jeremy.gibbons/publications/proyo.pdf">What you needa know about Yoneda</a></li>
+<li><a href="https://www.cs.ox.ac.uk/people/jeremy.gibbons/publications/poptics.pdf">Profunctor optics: modular data accessors</a></li>
+</ul>
+<p>It was that last paper that really laid everything in a manner comprehensible to me: they first define some optics in the more naïve, &quot;data&quot; encoding, and then they introduce the notion of <code>Profunctor</code> as a generalization of functions:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | A @Profunctor a b@ is a &quot;transformer&quot; that knows how to &quot;read&quot; and &quot;write&quot;
+-- into a value.
+</span><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Profunctor </span><span style="color:#ffffff;">p </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">dimap </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">&#39; </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">&#39;) </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p a</span><span style="color:#f8f8f2;">&#39; </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">&#39;
+</span></code></pre>
+<p>The instance of functions as profunctors somewhat cemented the &quot;intuition&quot; of
+profunctors for me:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | f can be understood as a preprocessor (which is why it&#39;s contravariant:
+-- has to output whatever h expects,) and g is a post-processor
+-- (which is why it&#39;s covariant, it takes what h produces)
+</span><span style="color:#ff79c6;">instance </span><span style="font-style:italic;color:#8be9fd;">Profunctor</span><span style="color:#f8f8f2;"> (</span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">  dimap f g h </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> f </span><span style="color:#ff79c6;">&gt;&gt;&gt;</span><span style="color:#f8f8f2;"> h </span><span style="color:#ff79c6;">&gt;&gt;&gt;</span><span style="color:#f8f8f2;"> g
+</span></code></pre>
+<p>In that a <code>dimap</code> operation on a profunctor <code>h</code>, given a function <code>f</code> that can
+<strong>produce</strong> inputs to <code>h</code>, and a function <code>g</code> that can <strong>consume</strong> outputs from <code>h</code>, gives us a new profunctor
+that &quot;wraps&quot; the original one. The paper does an excellent job in pacing this and all subsequent definitions, I can't do it justice here without reproducing the whole thing, so please go read it!</p>
+<p>And then, to finally land on
+these very symmetrical definitions of <code>Lens</code>, <code>Traversal</code> and <code>Prism</code>, which, being profunctors, can compose with each other (We'll define <code>Cartesian</code> and <code>CoCartesian</code> later):</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">Optic</span><span style="color:#f8f8f2;"> p a b s t </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> p a b </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> p s t
+
+</span><span style="color:#6272a4;">-- | &#39;Adapter&#39; is @Iso@ in @Control.Lens@
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">AdapterP</span><span style="color:#f8f8f2;"> a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Profunctor</span><span style="color:#f8f8f2;"> p 
+  </span><span style="color:#ff79c6;">=&gt; </span><span style="color:#bd93f9;">Optic</span><span style="color:#f8f8f2;"> p a b s t
+
+</span><span style="color:#6272a4;">-- | &#39;Cartesian&#39; in the paper is the same as @Strong@ in @profunctors@
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">LensP</span><span style="color:#f8f8f2;">  a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Cartesian</span><span style="color:#f8f8f2;"> p 
+  </span><span style="color:#ff79c6;">=&gt; </span><span style="color:#bd93f9;">Optic</span><span style="color:#f8f8f2;"> p a b s t
+
+</span><span style="color:#6272a4;">-- | &#39;CoCartesian&#39; == @Choice@ from @profunctors@
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">PrismP</span><span style="color:#f8f8f2;"> a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">CoCartesian</span><span style="color:#f8f8f2;"> p 
+  </span><span style="color:#ff79c6;">=&gt; </span><span style="color:#bd93f9;">Optic</span><span style="color:#f8f8f2;"> p a b s t
+
+</span><span style="color:#6272a4;">-- | &#39;Monoidal&#39; == @Traversing@ (?)
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">TraversalP</span><span style="color:#f8f8f2;"> a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Cartesian</span><span style="color:#f8f8f2;"> p, </span><span style="color:#bd93f9;">CoCartesian</span><span style="color:#f8f8f2;"> p, </span><span style="color:#bd93f9;">Monoidal</span><span style="color:#f8f8f2;"> p) 
+  </span><span style="color:#ff79c6;">=&gt; </span><span style="color:#bd93f9;">Optic</span><span style="color:#f8f8f2;"> p a b s t
+</span></code></pre>
+<p>Which rely on the following family of profunctors:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | Strength with respect to product types.
+-- @profunctors@ calls this @Strong@,
+-- also says it&#39;s the &quot;generalizing Star of a strong Functor&quot;
+</span><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Profunctor </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> =&gt; </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Cartesian </span><span style="color:#ffffff;">p </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">first </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#50fa7b;">second </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) (</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#6272a4;">-- | Known in @profunctors@ as @Choice@,
+-- &quot;generalizing CoStar of a Functor that&#39;s strong in Either&quot;
+</span><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Profunctor </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> =&gt; </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">CoCartesian </span><span style="color:#ffffff;">p </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">left </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">a c</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">b c</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#50fa7b;">right </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">c a</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">c b</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Profunctor </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> =&gt; </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Monoidal </span><span style="color:#ffffff;">p </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">par </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p c d </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">d</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#50fa7b;">empty </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p </span><span style="color:#6be5fd;">() ()
+</span></code></pre>
+<p>That is: all of these, and more, are optics with different constraints for the profunctors involved; and, being profunctors, an <code>Optic</code> itself can be seen as a lifting of a &quot;transformer&quot; of components <code>a</code> to <code>b</code>, <code>p a b</code>, into a &quot;transformer&quot; of whole structures <code>s</code> to <code>t</code>, <code>p s t</code>. And they combine nicely to produce new optics like affine traversals (where a Lens and Prism meet,) to solve concrete needs such as &quot;how to get the first element of an optional pair&quot;. I put together code from the paper as I was reading along, plus my very poorly named/thought out exploratory examples, <a href="https://gist.github.com/lfborjas/4c474566caa3507b0a0f4f26f761f98f">in a gist</a>, if you want to play with it and check out some examples. </p>
+<p>As I was putting together the gist above, it's very interesting to see how some operators from the <code>Control.Category</code> and <code>Control.Arrow</code> modules can be used to write some profunctor instances: a certain rhyming that intimates that in the same vein that <code>Arrow</code> aims to generalize at a very deep level some patterns of programming, <code>Profunctor</code> can be seen as building upon that same ethos (one can even say that <a href="https://github.com/purescript-deprecated/purescript-arrows/issues/9">&quot;Arrow is just a Strong Category, anyway&quot;</a>, though that's <a href="https://www.eyrie.org/%7Ezednenem/2017/07/twist">arguable</a>.)</p>
+<h3 id="an-extended-example">An extended example</h3>
+<p>One train of thought that I want to hop onto for a bit, is the paper's demonstration of the modularity of profunctor optics, vs. the less generally
+applicable &quot;concrete&quot; optics, which I think embodies the essence of these kind of &quot;high-yield&quot; abstractions.</p>
+<p>Let's say we want to write a concrete <code>Lens</code> into the first component of a pair:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | Concrete lens
+</span><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">Lens</span><span style="color:#f8f8f2;"> a b s t </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Lens</span><span style="color:#f8f8f2;"> {view </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> s </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> a, update </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (b,s) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> t}
+
+</span><span style="color:#6272a4;">-- | Act on the first component
+</span><span style="color:#50fa7b;">_1 </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Lens </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1 </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">Lens</span><span style="color:#f8f8f2;"> v u
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    v (a, c)</span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> a
+    u (b, (a,c)) </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> (b,c)
+</span></code></pre>
+<p>Which works fine. However, let's say that we're now dealing with a pair whose first component is itself a pair. We want something like <code>_1_1 :: Lens a b ((a,c),d) ((b,c),d)</code>. Since the concrete representation of <code>Lens</code> is not a function (or a <code>Category</code>,) we can't simply say that <code>_1_1 = _1 . _1</code>. So we must give up and pattern match once
+again:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#50fa7b;">_1_1 </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Lens </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> ((</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">),</span><span style="color:#ffffff;">d</span><span style="color:#f8f8f2;">) ((</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">),</span><span style="color:#ffffff;">d</span><span style="color:#f8f8f2;">)
+_1_1 </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">Lens</span><span style="color:#f8f8f2;"> v u
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    v ((a,c),d) </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> a
+    u (b, ((a,c),d)) </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> ((b,c),d)
+</span></code></pre>
+<p>The van Laarhoven encoding doesn't suffer from this:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | Almost the same definition as from Control.Lens, but with @s t a b@
+-- changed to @a b s t@ to agree with the profunctor optics paper:
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">LensVL</span><span style="color:#f8f8f2;"> a b s t </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall f</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Functor</span><span style="color:#f8f8f2;"> f </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (a </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f b) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> s </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f t
+
+</span><span style="color:#6272a4;">-- | little helper to build lenses 
+</span><span style="color:#50fa7b;">lens </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">s </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">s </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">t</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">LensVL </span><span style="color:#ffffff;">a b s t
+</span><span style="color:#f8f8f2;">lens sa sbt afb s </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> sbt s </span><span style="color:#ff79c6;">&lt;$&gt;</span><span style="color:#f8f8f2;"> afb (sa s)
+
+</span><span style="color:#50fa7b;">_1VL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">LensVL </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1VL </span><span style="color:#ff79c6;">= 
+</span><span style="color:#f8f8f2;">  lens v u
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    v (a,c) </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> a
+    u (a,c) b </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> (b,c)
+
+</span><span style="color:#50fa7b;">_1_1VL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">LensVL </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> ((</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">),</span><span style="color:#ffffff;">d</span><span style="color:#f8f8f2;">) ((</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">),</span><span style="color:#ffffff;">d</span><span style="color:#f8f8f2;">)
+_1_1VL </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _1VL </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _1VL
+</span></code></pre>
+<p>And neither does the profunctor encoding:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | &#39;Cartesian&#39; here == &#39;Strong&#39; in @profunctors@
+</span><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Profunctor </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> =&gt; </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Cartesian </span><span style="color:#ffffff;">p </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">first  </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#50fa7b;">second </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) (</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">LensP</span><span style="color:#f8f8f2;"> a b s t </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Cartesian</span><span style="color:#f8f8f2;"> p </span><span style="color:#ff79c6;">=&gt; </span><span style="color:#bd93f9;">Optic</span><span style="color:#f8f8f2;"> p a b s t
+
+</span><span style="color:#6272a4;">-- | Using left-to-right composition and &#39;fanout&#39; from Control.Category/Arrow,
+-- plus &#39;dimap&#39; from &#39;Profunctor&#39;:
+</span><span style="color:#50fa7b;">_1P </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">LensP </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1P </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> first </span><span style="color:#ff79c6;">&gt;&gt;&gt;</span><span style="color:#f8f8f2;"> dimap (fst &amp;&amp;&amp; id) (second snd)
+
+</span><span style="color:#50fa7b;">_1_1P </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">LensVL </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> ((</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">),</span><span style="color:#ffffff;">d</span><span style="color:#f8f8f2;">) ((</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">),</span><span style="color:#ffffff;">d</span><span style="color:#f8f8f2;">)
+_1_1P </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _1P </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _1P
+</span></code></pre>
+<p>Things get even more interesting once one gets prisms into the mix. Let's say we
+want to have a prism into an optional value:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">Prism</span><span style="color:#f8f8f2;"> a b s t </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Prism</span><span style="color:#f8f8f2;"> {match </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> s </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">Either</span><span style="color:#f8f8f2;"> t a, build </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> b </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> t}
+
+</span><span style="color:#50fa7b;">the </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Prism </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">)
+the </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">Prism</span><span style="color:#f8f8f2;"> m b
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    m </span><span style="color:#bd93f9;">Nothing </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Left Nothing
+</span><span style="color:#f8f8f2;">    m (</span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> a) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Right</span><span style="color:#f8f8f2;"> a
+    b b&#39; </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> b&#39;
+</span></code></pre>
+<p>If we wished to use <code>the</code> and <code>_1</code> together with this &quot;concrete&quot; encoding, as we've seen before when trying to compose <code>_1</code> after itself,
+we can't use the existing functions that we wrote for each sub-problem, and have to write the combination anew, by pattern matching and building up to the components of a new data type, the <code>AffineTraversal</code>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | Thanks to: https://github.com/hablapps/DontFearTheProfunctorOptics/blob/master/ProfunctorOptics.md#profunctor-affine
+-- and: https://artyom.me/lens-over-tea-5
+</span><span style="color:#ff79c6;">data </span><span style="color:#bd93f9;">AffineTraversal</span><span style="color:#f8f8f2;"> a b s t 
+  </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">AffineTraversal</span><span style="color:#f8f8f2;"> { preview </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> s </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#bd93f9;">Either</span><span style="color:#f8f8f2;"> t a, set </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (b,s) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> t}
+
+</span><span style="color:#50fa7b;">_the_1 </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">AffineTraversal </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)) (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">))
+_the_1 </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">AffineTraversal</span><span style="color:#f8f8f2;"> p s
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    p </span><span style="color:#bd93f9;">Nothing </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Left Nothing
+</span><span style="color:#f8f8f2;">    p (</span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> (a,c)) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Right</span><span style="color:#f8f8f2;"> a
+    s (b, </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> (a,c)) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> (b,c)
+    s (b, </span><span style="color:#bd93f9;">Nothing</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Nothing
+    
+</span><span style="color:#50fa7b;">_1_the </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">AffineTraversal </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1_the </span><span style="color:#ff79c6;">=
+  </span><span style="color:#bd93f9;">AffineTraversal</span><span style="color:#f8f8f2;"> p s
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    p (</span><span style="color:#bd93f9;">Nothing</span><span style="color:#f8f8f2;">, c) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Left</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Nothing</span><span style="color:#f8f8f2;">, c)
+    p (</span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> a, c) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Right</span><span style="color:#f8f8f2;"> a
+    s (b, (</span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> a, c)) </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> b,c)
+    s (b, (</span><span style="color:#bd93f9;">Nothing</span><span style="color:#f8f8f2;">,c)) </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Nothing</span><span style="color:#f8f8f2;">, c)
+</span></code></pre>
+<p>In the case of profunctor optics, we can get to affine traversals by simple composition,
+the new optic arising unladen as yet another &quot;<code>Optic</code> with certain constraints&quot; type alias:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Profunctor </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> =&gt; </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">CoCartesian </span><span style="color:#ffffff;">p </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">left </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">a c</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">b c</span><span style="color:#f8f8f2;">)
+  </span><span style="color:#50fa7b;">right </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">p a b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">c a</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">c b</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">PrismP</span><span style="color:#f8f8f2;"> a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">CoCartesian</span><span style="color:#f8f8f2;"> p 
+  </span><span style="color:#ff79c6;">=&gt; </span><span style="color:#bd93f9;">Optic</span><span style="color:#f8f8f2;"> p a b s t
+
+</span><span style="color:#50fa7b;">theP </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">PrismP </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">)
+theP </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> right </span><span style="color:#ff79c6;">&gt;&gt;&gt;</span><span style="color:#f8f8f2;"> dimap (maybe (</span><span style="color:#bd93f9;">Left Nothing</span><span style="color:#f8f8f2;">) </span><span style="color:#bd93f9;">Right</span><span style="color:#f8f8f2;">) (either id </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;">)
+
+</span><span style="color:#6272a4;">-- | optic into the first component of an optional pair
+-- &gt;&gt;&gt; the_1P (^2) (Just (3, True))
+-- Just (9,True)
+</span><span style="color:#50fa7b;">the_1P </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Cartesian </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">CoCartesian </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">Optic </span><span style="color:#ffffff;">p a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)) (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">))
+the_1P </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> theP </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _1
+
+</span><span style="color:#6272a4;">-- | optic onto the optional first component of a pair:
+-- &gt;&gt;&gt; _1_theP (^2) (Just 2, False)
+-- (Just 4,False)
+</span><span style="color:#50fa7b;">_1_theP </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Cartesian </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">CoCartesian </span><span style="color:#ffffff;">p</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">=&gt; </span><span style="font-style:italic;color:#8be9fd;">Optic </span><span style="color:#ffffff;">p a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1_theP </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _1 </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> theP
+</span></code></pre>
+<p>If we want to put a name to the resulting optic:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#6272a4;">-- | Optic with 0 or 1 targets.
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">AffineTraversalP</span><span style="color:#f8f8f2;"> a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Cartesian</span><span style="color:#f8f8f2;"> p, </span><span style="color:#bd93f9;">CoCartesian</span><span style="color:#f8f8f2;"> p)
+  </span><span style="color:#ff79c6;">=&gt; </span><span style="color:#bd93f9;">Optic</span><span style="color:#f8f8f2;"> p a b s t
+
+</span><span style="color:#6272a4;">-- | optic into the first component of an optional pair
+-- &gt;&gt;&gt; the_1P (^2) (Just (3, True))
+-- Just (9,True)
+</span><span style="color:#50fa7b;">the_1P </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">AffineTraversalP </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)) (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">))
+the_1P </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> theP </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _1 
+
+</span><span style="color:#6272a4;">-- | optic onto the optional first component of a pair:
+-- &gt;&gt;&gt; _1_theP (^2) (Just 2, False)
+-- (Just 4,False)
+</span><span style="color:#50fa7b;">_1_theP </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">AffineTraversalP </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1_theP </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _1 </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> theP
+</span></code></pre>
+<p>In the van Laarhoven encoding, we can also easily compose a Prism and a Lens:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">PrismVL</span><span style="color:#f8f8f2;"> a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p f</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">CoCartesian</span><span style="color:#f8f8f2;"> p, </span><span style="color:#bd93f9;">Applicative</span><span style="color:#f8f8f2;"> f) 
+  </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> p a (f b) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> p s (f t)
+
+</span><span style="color:#50fa7b;">prism </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">s </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">t a</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">t</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">PrismVL </span><span style="color:#ffffff;">a b s t
+</span><span style="color:#f8f8f2;">prism seta bt </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> dimap seta (either pure (fmap bt)) </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> right
+
+</span><span style="color:#50fa7b;">theVL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">PrismVL </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">)
+theVL </span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">  prism m b
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    m </span><span style="color:#bd93f9;">Nothing </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Left Nothing
+</span><span style="color:#f8f8f2;">    m (</span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> a) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Right</span><span style="color:#f8f8f2;"> a
+    b b&#39; </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> b&#39;
+
+</span><span style="color:#50fa7b;">the_1VL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Applicative </span><span style="color:#ffffff;">f </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">f b</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">f</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">))
+the_1VL </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> theVL </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _1VL
+
+</span><span style="color:#50fa7b;">_1_theVL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">Applicative </span><span style="color:#ffffff;">f </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">f b</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">f</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1_theVL </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _1VL </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> theVL
+</span></code></pre>
+<p>However, if were to put a name to the resulting optic, <a href="https://oleg.fi/gists/posts/2017-03-20-affine-traversal.html">as described much better elsewhere</a>, we would be forced, given the <code>Applicative</code> constraint inherited from the traditional definition of <code>Prism</code>, to recognize it as a <code>Traversal</code>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">TraversalVL</span><span style="color:#f8f8f2;"> a b s t </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall f</span><span style="color:#ff79c6;">. </span><span style="color:#bd93f9;">Applicative</span><span style="color:#f8f8f2;"> f </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (a </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f b) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> s </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f t
+
+</span><span style="color:#50fa7b;">the_1VL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">TraversalVL </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)) (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">))
+the_1VL </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> theVL </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _1VL
+
+</span><span style="color:#50fa7b;">_1_theVL </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">TraversalVL </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">,</span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1_theVL </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _1VL </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> theVL
+</span></code></pre>
+<p>Which isn't quite right, as it's slightly overpowered: a <code>Traversal</code> can have many
+targets that it can act upon sequentially (hence the <code>Applicative</code>), but we really only need to target zero or one components of a value that we may act upon or update. If we had an alternative formulation of <code>Prism</code>, with the controversial <a href="https://wiki.haskell.org/Why_not_Pointed%3F"><code>Pointed</code> class</a>:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">class </span><span style="text-decoration:underline;font-style:italic;color:#8be9fd;">Pointed </span><span style="color:#ffffff;">p </span><span style="color:#ff79c6;">where
+  </span><span style="color:#50fa7b;">point </span><span style="color:#ff79c6;">:: </span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">p a
+
+</span><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">PrismVL</span><span style="color:#f8f8f2;">&#39; a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall p f</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">CoCartesian</span><span style="color:#f8f8f2;"> p, </span><span style="color:#bd93f9;">Functor</span><span style="color:#f8f8f2;"> f, </span><span style="color:#bd93f9;">Pointed</span><span style="color:#f8f8f2;"> f) 
+  </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> p a (f b) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> p s (f t)
+
+</span><span style="color:#50fa7b;">prism&#39; </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">s </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Either </span><span style="color:#ffffff;">t a</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">t</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">PrismVL</span><span style="color:#f8f8f2;">&#39; </span><span style="color:#ffffff;">a b s t
+</span><span style="color:#f8f8f2;">prism&#39; seta bt </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> dimap seta (either point (fmap bt)) </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> right
+
+</span><span style="color:#50fa7b;">theVL&#39; </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">PrismVL</span><span style="color:#f8f8f2;">&#39; </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">)
+theVL&#39;</span><span style="color:#ff79c6;">=
+</span><span style="color:#f8f8f2;">  prism&#39; m b
+  </span><span style="color:#ff79c6;">where
+</span><span style="color:#f8f8f2;">    m </span><span style="color:#bd93f9;">Nothing </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Left Nothing
+</span><span style="color:#f8f8f2;">    m (</span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> a) </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Right</span><span style="color:#f8f8f2;"> a
+    b b&#39; </span><span style="color:#ff79c6;">= </span><span style="color:#bd93f9;">Just</span><span style="color:#f8f8f2;"> b&#39;
+
+</span><span style="color:#50fa7b;">_the_1VL&#39; </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Functor </span><span style="color:#ffffff;">f</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">Pointed </span><span style="color:#ffffff;">f</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">f b</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">f</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">))
+_the_1VL&#39; </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> theVL&#39; </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _1VL
+
+</span><span style="color:#50fa7b;">_1_theVL&#39; </span><span style="color:#ff79c6;">::</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Functor </span><span style="color:#ffffff;">f</span><span style="color:#f8f8f2;">, </span><span style="font-style:italic;color:#8be9fd;">Pointed </span><span style="color:#ffffff;">f</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">f b</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) </span><span style="color:#ff79c6;">-&gt; </span><span style="color:#ffffff;">f</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1_theVL&#39; </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _1VL </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> theVL&#39;
+</span></code></pre>
+<p>And if we were to put a name to the resulting optic:</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#ff79c6;">type </span><span style="color:#bd93f9;">AffineTraversalVL</span><span style="color:#f8f8f2;"> a b s t 
+  </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> forall f</span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> (</span><span style="color:#bd93f9;">Functor</span><span style="color:#f8f8f2;"> f, </span><span style="color:#bd93f9;">Pointed</span><span style="color:#f8f8f2;"> f) 
+  </span><span style="color:#ff79c6;">=&gt;</span><span style="color:#f8f8f2;"> (a </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f b) </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> s </span><span style="color:#ff79c6;">-&gt;</span><span style="color:#f8f8f2;"> f t
+
+</span><span style="color:#50fa7b;">_the_1VL&#39; </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">AffineTraversalVL </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)) (</span><span style="font-style:italic;color:#8be9fd;">Maybe</span><span style="color:#f8f8f2;"> (</span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">))
+_the_1VL&#39; </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> theVL&#39; </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> _1VL
+
+</span><span style="color:#50fa7b;">_1_theVL&#39; </span><span style="color:#ff79c6;">:: </span><span style="font-style:italic;color:#8be9fd;">AffineTraversalVL </span><span style="color:#ffffff;">a b</span><span style="color:#f8f8f2;"> (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">a</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">) (</span><span style="font-style:italic;color:#8be9fd;">Maybe </span><span style="color:#ffffff;">b</span><span style="color:#f8f8f2;">, </span><span style="color:#ffffff;">c</span><span style="color:#f8f8f2;">)
+_1_theVL&#39; </span><span style="color:#ff79c6;">=</span><span style="color:#f8f8f2;"> _1VL </span><span style="color:#ff79c6;">.</span><span style="color:#f8f8f2;"> theVL&#39;
+</span></code></pre>
+<p>I find that quite neat: just like <code>Pointed</code> is right there between <code>Functor</code> and <code>Applicative</code>, an <code>AffineTraversal</code>, which can focus on a part of a whole that may not be there, is right there between acting upon one target either reading or setting a part of a whole (<code>Lens</code>) and one of mutually exclusive alternatives which can also construct the whole (<code>Prism</code>) (and not <em>beyond</em>, all the way to <code>Traversal</code>, which can act over many targets at once.) It's interesting, though, how in both the van Laarhoven encoding and the profunctor encoding, a hierarchy arises and one can use a <code>Traversal</code>, say, to do the job of an <code>AffineTraversal</code> or a <code>Prism</code>, which are &quot;below&quot; in the hierarchy -- much like one can use a power tool to open a can of tomato sauce: possible, but some of the power
+is being &quot;wasted,&quot; and one could make a (conceptual) mess. Just because I think it's pretty, the also extremely excellent <code>Glassery</code> article <a href="https://oleg.fi/gists/posts/2017-04-18-glassery.html">shows several optics in their hierarchical relationship as a diagram</a></p>
+<p>The paper of course doesn't cover all possible bases -- it stays true to its mission of focusing on profunctor optics; they hint at the existence of Affine Traversals but don't land on the concept by name, and they intimate in passing an impossibility with <code>Costar</code> and <code>Choice</code> that <a href="https://www.reddit.com/r/haskell/comments/red3at/which_functors_are_strong_with_respect_to_either/">I asked on Reddit about</a>, because it seemed to contradict another intimation <a href="https://hackage.haskell.org/package/profunctors-5.6.2/docs/Data-Profunctor-Choice.html">found in the <code>profunctors</code> library</a></p>
+<h2 id="coming-down-from-the-profunctors-trip">Coming down from the profunctors trip</h2>
+<p>Apart from providing a more solid foundation to my notion of the biggest selling point for optics being the modularity they provide to other types, and how this kind of very generic but very applicable concept can dispense with loads of boilerplate, it also does an excellent job in providing a practical equivalence between &quot;concrete&quot; (&quot;data&quot;) encodings of optics, and profunctor optics. The &quot;what you needa know about yoneda&quot; paper does a great job in proving equivalence between the profunctor and van laarhoven encodings, as does <a href="https://www.youtube.com/watch?v=l1FCXUi6Vlw">this talk by Bartosz Milewski</a>. I even <a href="https://hackage.haskell.org/package/lens-5.1/docs/Control-Lens-Profunctor.html">found code in Control.Lens</a> to transform between representations!</p>
+<p>One somewhat abstract lesson here is: it's interesting how the story of concrete encodings being easy to grok but not very
+helpful once one wants to compose optics with each other contrasts with the more &quot;rarefied&quot; encodings that <em>do</em> allow composability: the van Laarhoven encoding uses existing type classes to arm each
+optics representation with power coming from more general concepts (<code>Functor</code> for focusing on one component, like <code>Lenses</code>; <code>Applicative</code> for focusing on many,) but it suffers from some legacy issues by engaging the existing type class hierarchy going up from there: though it can go very far by not using anything that's not in <code>base</code>, it eventually has to rely on <code>Profunctor</code> anyway for <code>Prism</code> and others; the <code>Profunctor</code> encoding builds upon a different hierarchy with <code>Profunctor</code> at its base, which is conceptually extremely clean, but in the current state of affairs, requires pulling in the heavy <code>profunctors</code> package.</p>
+<p>Another, more concrete lesson, is that just like my &quot;pattern match every single time&quot; motivating story can get tedious, concrete optics buckle under the weight of their lack of generality; the more &quot;abstract&quot; encodings provide a vocabulary to elide boilerplate tasks -- this is a conclusion drawn by the profunctor optics paper, too, and they point to other interesting work in this same vein, like the <a href="https://stackoverflow.com/questions/28244136/what-is-scrap-your-boilerplate">Scrap your Boilerplate</a> concept: purely mechanical work on data shouldn't pollute most business logic!</p>
+<p>Also, by seeing how <code>Traversal</code> relates to <code>Prism</code> and <code>AffineTraversal</code>, I feel mostly okay about my library exporting <code>Traversal</code>s where it should be exporting <code>Prism</code>s -- though if <code>profunctors</code> ever land in <code>base</code>, or if a &quot;transformer&quot; arises in my library as I refine it and thus necessitates pulling in the <code>profunctors</code> package, I'd like to refactor my pseudo-Prisms: I like the notion of the power of the
+abstraction being commensurate to the use case!</p>
+<h2 id="libraries">Libraries</h2>
+<p>Apart from <code>vitrea</code>, which is more of an academic foray into the category theoretical implications of the profunctors encoding, and the very excellent <code>optics</code> library which includes indexed optics, I've found a couple implementations that use profunctors, by well-regarded haskellers:</p>
+<ul>
+<li><a href="https://github.com/kowainik/prolens"><code>prolens</code></a> by Kowainik -- zero dependencies: they define their own profunctor classes</li>
+<li><a href="https://github.com/fresnel/fresnel"><code>fresnel</code></a> by robrix (of <code>fused-effects</code> fame) -- provides a much larger set of optics, depending on <code>profunctors</code> and friends.</li>
+<li>Unrelated to profunctors, I was glad to find a couple of Clojure approximations: <a href="https://github.com/ctford/traversy"><code>traversy</code></a>, which admits to only providing Traversals, and <a href="https://github.com/redplanetlabs/specter"><code>specter</code></a>, which seems like it arose independently of optics theory.</li>
+</ul>
+<h2 id="further-reading">Further reading</h2>
+<p>Once again, the <a href="https://arxiv.org/abs/1703.10857"><code>Profunctor Optics</code> paper by Pickering, Gibbons and Wu</a> is a fantastic resource, but these others, in no particular order, also served in writing this article (and, no doubt, as I learn much more about what optics can bring to the table: )</p>
+<ul>
+<li><a href="https://oleg.fi/gists/posts/2017-04-18-glassery.html">Oleg Grenrus's Glassery</a> and <a href="https://oleg.fi/gists/posts/2017-03-20-affine-traversal.html">Affine Traversals</a></li>
+<li><a href="https://artyom.me/lens-over-tea-5">Lens over Tea</a></li>
+<li><a href="https://github.com/monadfix/microlens">microlens</a></li>
+<li><a href="https://github.com/mroman42/vitrea">Mario Roman's <code>vitrea</code> optics library, using the profunctor encoding</a> -- he also <a href="https://arxiv.org/abs/2001.07488">coauthored a paper</a> on the category theoretical foundation of profunctor optics.</li>
+<li><a href="https://hackage.haskell.org/package/optics-0.4/docs/Optics.html">Well-Typed's <code>optics</code> library, with very thorough documentation</a> -- the <a href="https://www.well-typed.com/blog/2019/09/announcing-the-optics-library/#fn1">announcement</a> has pretty diagrams!</li>
+<li>The <a href="https://thomashoneyman.com/articles/practical-profunctor-lenses-optics/">superb introduction to optics in Purescript</a>, which uses the profunctor encoding.</li>
+<li><a href="https://www.reddit.com/r/haskell/comments/5wf49a/didnt_struggle_with_monads_as_much_as_were/">Reddit discussion on Profunctors</a></li>
+<li><a href="https://github.com/hablapps/DontFearTheProfunctorOptics">Don't fear the profunctor optics</a></li>
+</ul>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/haskell/">haskell</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/optics/">optics</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

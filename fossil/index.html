@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Luis Borjas Reyes - tech blog</title>
+
+      
+
+      
+<link rel="stylesheet" href="https://tech.lfborjas.com/base.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com">
+                                <span itemprop="name">Home
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;tech.lfborjas.com&#x2F;tags">
+                                <span itemprop="name">Tags
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.lfborjas.com">
+                                <span itemprop="name">About
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline"> Hosting a fossil repo with lighttpd</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>4 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2011-03-25
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>I started working in a project, and it was using fossil as it's scm. I cloned it and began doing my stuff, at first it felt weird, as I am a git user, but eventually I got the knack of it and it feels nice and clean, definitely easier than git. However, because I'm not part of the official project (i.e. I'm working on a <em>fork</em>, if you wanna hear git-speak), I didn't have write privileges on the server, so I decided to host my own copy.</p>
+<span id="continue-reading"></span>
+<p>I used to be running a <a href="http://git.lfborjas.com">personal git server</a> <a href="http://jonathanrobson.me/2009/11/how-to-setup-gitweb-with-lighttpd-on-ubuntu">with lighttpd</a>, so I decided that I'd use another virtual host under the same domain for the fossil repo. I'm fairly ignorant of lighttpd and web server technologies in general, so I ran into a wall when trying to host the fossil repo <a href="http://www.fossil-scm.org/index.html/doc/trunk/www/server.wiki">using the cgi script</a>. I didn't want to give up and just run <code>fossil server</code>, because it would be ugly to write the ip:port combo everytime and because I didn't want to waste my limited memory in a long running daemon. So I set up the virtual host and configured it to relay control to the cgi script, but it only worked for the root url (<code>&quot;/&quot;</code>). But it didn't work (I'm guessing now that leaving the field blank would have done the job...)
+At the moment, I was, nevertheless, stumped, so I <a href="http://serverfault.com/questions/228954/how-to-host-a-fossil-repository-with-lighttpd/251238">asked in serverfault</a> and left it there.</p>
+<p>After that a whole month went by and I kinda forgot the whole thing, as I paused my work in the project to attend to more urgent matters. A couple of days ago, however, I got an answer to my serverfault question which suggested that I use <a href="http://redmine.lighttpd.net/wiki/1/Docs:ModProxy"><code>mod_proxy</code></a> with the <code>fossil server</code> command. And after reading a little more, both <a href="http://sheddingbikes.com/posts/1276624594.html">this article by Zed Shaw</a> and the actual <a href="http://www.fossil-scm.org/index.html/doc/trunk/www/server.wiki">manual</a>, it hit me: run it as a xinetd service in some port and use <code>mod_proxy</code> to direct requests to the subdomain to it. So here's what I did:</p>
+<ol>
+<li>Installed xinetd (<code>sudo apt-get install xinetd</code>)</li>
+<li>Created a user for the project (<code>sudo useradd -m theuser</code>)</li>
+<li>Moved the fossil file (the sqlite db) to that user's home folder and set him as owner and group.</li>
+<li>Added a new xinetd service (under <code>/etc/xinetd.d</code>) to listen for http requests in the port 8081.</li>
+<li>Added a new lighty virtual host that used proxy to redirect all its requests to the port 8081.</li>
+<li>Restarted xinetd and lighty and voilà, things worked.</li>
+</ol>
+<p>One caveat with this approach is that, in the lighttpd conf, when setting up the proxy the first time, I wrote the loopback address (127.0.0.1), but that made fossil believe that it was a local request, and it logged me in automatically. Because the site is publicly accessible, that's not good at all. The solution was to write the host's actual public ip address in the proxy config.</p>
+<p>The xinetd service, which I put in <code>/etc/xinetd.d/fossil</code>, looks something like this (I got the idea from <a href="http://www.mail-archive.com/fossil-users@lists.fossil-scm.org/msg01431.html">here</a>):</p>
+<pre style="background-color:#282a36;">
+<code>service fossil
+{
+    type = UNLISTED
+    port = 8081
+    socket_type = stream
+    protocol = tcp
+    user = root
+    wait = no
+    cps = 1000
+    server = /usr/bin/fossil
+    server_args = http /home/theuser/fossils/project.fossil
+}
+</code></pre>
+<p>And the important parts of the lighty conf file (in <code>/etc/lighttpd/lighttpd.conf</code>) look like this (and this bit was inspired by <a href="http://web2pyslices.com/main/slices/take_slice/96">this web2py recipe</a>):</p>
+<pre style="background-color:#282a36;">
+<code><span style="color:#f8f8f2;">server.modules  = (
+            &quot;mod_proxy&quot;,
+            #other irrelevant modules 
+)
+
+#more conf...
+$HTTP[&quot;host&quot;] =~ &quot;^the-subdomain.the-domain.com$&quot; {
+  proxy.server = (
+    #&quot;&quot; matches ALL paths, like a wildcard
+    &quot;&quot; =&gt; ((
+     &quot;host&quot; =&gt; &quot;10.0.0.2&quot;, #this is not the actual ip address
+     &quot;port&quot; =&gt; 8081
+    ))
+  )
+}
+</span></code></pre>
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://tech.lfborjas.com/tags/sysadmin/">sysadmin</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/linux/">linux</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/lighttpd/">lighttpd</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://tech.lfborjas.com/tags/fossil/">fossil</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+            
+            
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>
